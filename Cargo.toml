@@ -26,3 +26,4 @@ rand = "0.8.5"
 
 [features]
 nightly = ["lock_api/nightly"]
+atomic_usize = ["lock_api/atomic_usize"]
