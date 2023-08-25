@@ -4,9 +4,9 @@
 // Re-export this so that our users can use the same version we do.
 pub use lock_api;
 
-pub struct Condvar(condvar::MovableCondvar);
+pub type RawCondvar = condvar::MovableCondvar;
 
-use core::time::Duration;
+pub struct Condvar(RawCondvar);
 
 impl Condvar {
     #[inline]
@@ -17,7 +17,7 @@ impl Condvar {
     #[inline]
     pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
         unsafe {
-            self.0.wait(MutexGuard::mutex(&guard));
+            self.0.wait(MutexGuard::mutex(&guard).raw());
         }
         guard
     }
@@ -26,9 +26,9 @@ impl Condvar {
     pub fn wait_timeout<'a, T>(
         &self,
         guard: MutexGuard<'a, T>,
-        dur: Duration,
+        dur: core::time::Duration,
     ) -> (MutexGuard<'a, T>, bool) {
-        let result = unsafe { self.0.wait_timeout(MutexGuard::mutex(&guard), dur) };
+        let result = unsafe { self.0.wait_timeout(MutexGuard::mutex(&guard).raw(), dur) };
         (guard, result)
     }
 

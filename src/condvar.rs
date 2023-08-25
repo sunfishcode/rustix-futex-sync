@@ -6,7 +6,7 @@ use super::wait_wake::{futex_wait, futex_wake, futex_wake_all};
 use super::RawMutex;
 use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
 use core::time::Duration;
-use lock_api::{Mutex, RawMutex as _};
+use lock_api::RawMutex as _;
 
 pub type MovableCondvar = Condvar;
 
@@ -38,35 +38,35 @@ impl Condvar {
         futex_wake_all(&self.futex);
     }
 
-    pub unsafe fn wait<'a, T>(&self, mutex: &Mutex<RawMutex, T>) {
+    pub unsafe fn wait(&self, mutex: &RawMutex) {
         self.wait_optional_timeout(mutex, None);
     }
 
-    pub unsafe fn wait_timeout<'a, T>(
+    pub unsafe fn wait_timeout(
         &self,
-        mutex: &Mutex<RawMutex, T>,
+        mutex: &RawMutex,
         timeout: Duration,
     ) -> bool {
         self.wait_optional_timeout(mutex, Some(timeout))
     }
 
-    unsafe fn wait_optional_timeout<'a, T>(
+    unsafe fn wait_optional_timeout(
         &self,
-        mutex: &Mutex<RawMutex, T>,
+        mutex: &RawMutex,
         timeout: Option<Duration>,
     ) -> bool {
         // Examine the notification counter _before_ we unlock the mutex.
         let futex_value = self.futex.load(Relaxed);
 
         // Unlock the mutex before going to sleep.
-        mutex.raw().unlock();
+        mutex.unlock();
 
         // Wait, but only if there hasn't been any
         // notification since we unlocked the mutex.
         let r = futex_wait(&self.futex, futex_value, timeout);
 
         // Lock the mutex again.
-        mutex.raw().lock();
+        mutex.lock();
 
         r
     }
