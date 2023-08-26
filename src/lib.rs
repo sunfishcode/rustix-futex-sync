@@ -53,6 +53,10 @@ pub type RwLock<T> = lock_api::RwLock<RawRwLock, T>;
 pub type MutexGuard<'a, T> = lock_api::MutexGuard<'a, RawMutex, T>;
 pub type RwLockReadGuard<'a, T> = lock_api::RwLockReadGuard<'a, RawRwLock, T>;
 pub type RwLockWriteGuard<'a, T> = lock_api::RwLockWriteGuard<'a, RawRwLock, T>;
+#[cfg(feature = "atomic_usize")]
+pub type ReentrantMutex<G, T> = lock_api::ReentrantMutex<RawMutex, G, T>;
+#[cfg(feature = "atomic_usize")]
+pub type ReentrantMutexGuard<'a, G, T> = lock_api::ReentrantMutexGuard<'a, RawMutex, G, T>;
 
 // std's implementation code.
 mod condvar;
