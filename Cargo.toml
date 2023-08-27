@@ -9,8 +9,10 @@ documentation = "https://docs.rs/rustix-futex-sync"
 license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
 repository = "https://github.com/sunfishcode/rustix-futex-sync"
 edition = "2021"
-keywords = ["linux", "futex"]
+keywords = ["linux", "futex", "condvar", "mutex", "rwlock"]
 categories = ["concurrency", "os::unix-apis", "no-std"]
+include = ["src", "Cargo.toml", "COPYRIGHT", "LICENSE*", "/*.md"]
+rust-version = "1.70"
 
 [dependencies]
 rustix = { version = "0.38.1", default-features = false, features = ["thread", "time"] }
