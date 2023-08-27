@@ -6,6 +6,7 @@ pub use lock_api;
 
 pub type RawCondvar = condvar::MovableCondvar;
 
+#[repr(transparent)]
 pub struct Condvar(RawCondvar);
 
 impl Condvar {
