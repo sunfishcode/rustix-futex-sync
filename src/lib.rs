@@ -1,5 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![no_std]
+#![cfg_attr(doc_cfg, feature(doc_cfg))]
 
 // Re-export this so that our users can use the same version we do.
 pub use lock_api;
@@ -55,8 +56,10 @@ pub type MutexGuard<'a, T> = lock_api::MutexGuard<'a, RawMutex, T>;
 pub type RwLockReadGuard<'a, T> = lock_api::RwLockReadGuard<'a, RawRwLock, T>;
 pub type RwLockWriteGuard<'a, T> = lock_api::RwLockWriteGuard<'a, RawRwLock, T>;
 #[cfg(feature = "atomic_usize")]
+#[cfg_attr(doc_cfg, doc(cfg(feature = "atomic_usize")))]
 pub type ReentrantMutex<G, T> = lock_api::ReentrantMutex<RawMutex, G, T>;
 #[cfg(feature = "atomic_usize")]
+#[cfg_attr(doc_cfg, doc(cfg(feature = "atomic_usize")))]
 pub type ReentrantMutexGuard<'a, G, T> = lock_api::ReentrantMutexGuard<'a, RawMutex, G, T>;
 
 // std's implementation code.
