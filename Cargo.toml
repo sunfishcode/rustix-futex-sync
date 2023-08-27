@@ -18,8 +18,6 @@ lock_api = { version = "0.4.7", default-features = false }
 
 # Special dependencies used in rustc-dep-of-std mode.
 core = { version = "1.0.0", optional = true, package = "rustc-std-workspace-core" }
-alloc = { version = "1.0.0", optional = true, package = "rustc-std-workspace-alloc" }
-compiler_builtins = { version = '0.1.49', optional = true }
 
 [dev-dependencies]
 rand = "0.8.5"
