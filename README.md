@@ -13,6 +13,11 @@
   </p>
 </div>
 
-Linux futex-based implementations of `Mutex`, `RwLock`, and `CondVar`, derived
-from the futex code in std, factored out to a standalone `no_std` crate using
-`rustix` to do the futex and `lock_api` to provide most of the public API.
+Linux futex-based implementations of [`Mutex`], [`RwLock`], and [`Condvar`],
+derived from the futex code in std, factored out to a standalone `no_std` crate
+using `rustix` to do the futex and `lock_api` to provide most of the public
+API.
+
+[`Mutex`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.Mutex.html
+[`RwLock`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.RwLock.html
+[`Condvar`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.Condvar.html
