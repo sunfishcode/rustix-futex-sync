@@ -23,22 +23,22 @@ jobs:
     name: Test
     runs-on: ${{ matrix.os }}
     env:
-      QEMU_BUILD_VERSION: 7.0.0
+      QEMU_BUILD_VERSION: 8.1.0
     strategy:
       matrix:
         build: [ubuntu, ubuntu-20.04, i686-linux, aarch64-linux, riscv64-linux]
         include:
           - build: ubuntu
             os: ubuntu-latest
-            rust: nightly-2023-06-27
+            rust: nightly-2023-09-20
             host_target: x86_64-unknown-linux-gnu
           - build: ubuntu-20.04
             os: ubuntu-20.04
-            rust: nightly-2023-06-27
+            rust: nightly-2023-09-20
             host_target: x86_64-unknown-linux-gnu
           - build: i686-linux
             os: ubuntu-latest
-            rust: nightly-2023-06-27
+            rust: nightly-2023-09-20
             target: i686-unknown-linux-gnu
             gcc_package: gcc-i686-linux-gnu
             gcc: i686-linux-gnu-gcc
@@ -46,7 +46,7 @@ jobs:
             host_target: i686-unknown-linux-gnu
           - build: aarch64-linux
             os: ubuntu-latest
-            rust: nightly-2023-06-27
+            rust: nightly-2023-09-20
             target: aarch64-unknown-linux-gnu
             gcc_package: gcc-aarch64-linux-gnu
             gcc: aarch64-linux-gnu-gcc
@@ -55,7 +55,7 @@ jobs:
             host_target: aarch64-unknown-linux-gnu
           - build: riscv64-linux
             os: ubuntu-latest
-            rust: nightly-2023-06-27
+            rust: nightly-2023-09-20
             target: riscv64gc-unknown-linux-gnu
             gcc_package: gcc-riscv64-linux-gnu
             gcc: riscv64-linux-gnu-gcc
