@@ -16,7 +16,7 @@ rust-version = "1.70"
 
 [dependencies]
 rustix = { version = "1.0.0", default-features = false, features = ["thread", "time"] }
-lock_api = { version = "0.4.7", default-features = false, optional = true }
+lock_api = { git = "https://github.com/sunfishcode/parking_lot", branch = "rustc-dep-of-std", default-features = false, optional = true }
 
 # Special dependencies used in rustc-dep-of-std mode.
 core = { version = "1.0.0", optional = true, package = "rustc-std-workspace-core" }
@@ -34,6 +34,7 @@ shm = []
 rustc-dep-of-std = [
     "dep:core",
     "rustix/rustc-dep-of-std",
+    "lock_api?/rustc-dep-of-std",
     "compiler_builtins",
 ]
 
