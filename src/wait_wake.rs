@@ -13,9 +13,6 @@ use rustix::time::{ClockId, Timespec};
 ///
 /// Returns false on timeout, and true in all other cases.
 pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -> bool {
-    use core::ptr::{null, null_mut};
-    use core::sync::atomic::Ordering::Relaxed;
-
     // Calculate the timeout as an absolute timespec.
     //
     // Overflows are rounded up to an infinite timeout (None).
@@ -29,6 +26,18 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -
             }
         })
     });
+
+    futex_wait_timespec(futex, expected, timespec)
+}
+
+/// Like [`futex_wait`], but takes a [`Timespec`] for an optional time on the
+/// [`ClockId::Monotnic`] clock to wake up at.
+///
+/// This allows callers that don't need the timeout to pass `None` and avoid
+/// statically depending on `clock_gettime`.
+pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<Timespec>) -> bool {
+    use core::ptr::{null, null_mut};
+    use core::sync::atomic::Ordering::Relaxed;
 
     loop {
         // No need to wait if the value already changed.

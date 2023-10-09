@@ -2,7 +2,7 @@
 //! library/std/src/sys/unix/locks/futex_rwlock.rs at revision
 //! 98815742cf2e914ee0d7142a02322cf939c47834.
 
-use super::wait_wake::{futex_wait, futex_wake, futex_wake_all};
+use super::wait_wake::{futex_wait_timespec, futex_wake, futex_wake_all};
 use core::sync::atomic::{
     AtomicU32,
     Ordering::{Acquire, Relaxed, Release},
@@ -148,7 +148,7 @@ impl RwLock {
             }
 
             // Wait for the state to change.
-            futex_wait(&self.state, state | READERS_WAITING, None);
+            futex_wait_timespec(&self.state, state | READERS_WAITING, None);
 
             // Spin again after waking up.
             state = self.spin_read();
@@ -236,7 +236,7 @@ impl RwLock {
             }
 
             // Wait for the state to change.
-            futex_wait(&self.writer_notify, seq, None);
+            futex_wait_timespec(&self.writer_notify, seq, None);
 
             // Spin again after waking up.
             state = self.spin_write();
