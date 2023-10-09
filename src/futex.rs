@@ -2,7 +2,7 @@
 //! library/std/src/sys/unix/locks/futex_mutex.rs at revision
 //! 98815742cf2e914ee0d7142a02322cf939c47834.
 
-use super::wait_wake::{futex_wait, futex_wake};
+use super::wait_wake::{futex_wait_timespec, futex_wake};
 use core::sync::atomic::{
     AtomicU32,
     Ordering::{Acquire, Relaxed, Release},
@@ -61,7 +61,7 @@ impl Mutex {
             }
 
             // Wait for the futex to change state, assuming it is still 2.
-            futex_wait(&self.futex, 2, None);
+            futex_wait_timespec(&self.futex, 2, None);
 
             // Spin again after waking up.
             state = self.spin();
