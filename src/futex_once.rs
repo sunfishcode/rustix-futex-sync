@@ -73,6 +73,7 @@ impl<'a> Drop for CompletionGuard<'a> {
     }
 }
 
+#[repr(transparent)]
 pub struct Once {
     state: AtomicU32,
 }

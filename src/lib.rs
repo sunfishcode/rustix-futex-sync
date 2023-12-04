@@ -82,7 +82,7 @@ use futex_rwlock::MovableRwLock;
 // Encapsulate the std lock types to hide this detail.
 #[repr(transparent)]
 pub struct RawMutex(MovableMutex);
-#[repr(transparent)]
+#[repr(C)]
 pub struct RawRwLock(MovableRwLock);
 
 // Implement the raw lock traits for our wrappers.
