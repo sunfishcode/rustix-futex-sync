@@ -2,10 +2,10 @@
 //! library/std/src/sys/unix/locks/futex_condvar.rs at revision
 //! 98815742cf2e914ee0d7142a02322cf939c47834.
 
-use super::wait_wake::{futex_wait, futex_wake, futex_wake_all};
-use super::RawMutex;
 use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
+use super::wait_wake::{futex_wait, futex_wake, futex_wake_all};
 use core::time::Duration;
+use super::RawMutex;
 use lock_api::RawMutex as _;
 
 pub type MovableCondvar = Condvar;
@@ -20,9 +20,7 @@ pub struct Condvar {
 impl Condvar {
     #[inline]
     pub const fn new() -> Self {
-        Self {
-            futex: AtomicU32::new(0),
-        }
+        Self { futex: AtomicU32::new(0) }
     }
 
     // All the memory orderings here are `Relaxed`,

@@ -5,7 +5,7 @@
 // Re-export this so that our users can use the same version we do.
 pub use lock_api;
 
-pub type RawCondvar = condvar::MovableCondvar;
+pub type RawCondvar = futex_condvar::MovableCondvar;
 
 #[repr(transparent)]
 pub struct Condvar(RawCondvar);
@@ -13,7 +13,7 @@ pub struct Condvar(RawCondvar);
 impl Condvar {
     #[inline]
     pub const fn new() -> Self {
-        Self(condvar::MovableCondvar::new())
+        Self(futex_condvar::MovableCondvar::new())
     }
 
     #[inline]
@@ -67,8 +67,8 @@ pub use once_lock::OnceLock;
 // 6fd7e9010db6be7605241c39eab7c5078ee2d5bd.
 
 // std's implementation code.
-mod condvar;
-mod futex;
+mod futex_condvar;
+mod futex_mutex;
 mod futex_once;
 mod futex_rwlock;
 mod once;
@@ -76,7 +76,7 @@ mod once_lock;
 mod wait_wake;
 
 // Use the raw lock types from std's implementation.
-use futex::MovableMutex;
+use futex_mutex::MovableMutex;
 use futex_rwlock::MovableRwLock;
 
 // Encapsulate the std lock types to hide this detail.
