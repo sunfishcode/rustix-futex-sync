@@ -8,8 +8,6 @@ use core::sync::atomic::{
 };
 use super::wait_wake::{futex_wait_timespec, futex_wake, futex_wake_all};
 
-pub type MovableRwLock = RwLock;
-
 #[repr(C)]
 pub struct RwLock {
     // The state consists of a 30-bit reader counter, a 'readers waiting' flag, and a 'writers waiting' flag.

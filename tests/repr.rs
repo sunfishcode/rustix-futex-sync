@@ -1,5 +1,6 @@
-/// rustix_futex_sync documents some details of the representation of some of
-/// its public types.
+//! rustix_futex_sync documents some details of the representation of some of
+//! its public types.
+
 use core::mem::{align_of, size_of, transmute};
 use rustix_futex_sync::lock_api::{RawMutex as _, RawRwLock as _};
 use rustix_futex_sync::{Condvar, Once, RawCondvar, RawMutex, RawRwLock};

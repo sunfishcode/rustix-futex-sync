@@ -5,8 +5,6 @@
 // Re-export this so that our users can use the same version we do.
 pub use lock_api;
 
-pub type RawCondvar = futex_condvar::MovableCondvar;
-
 // Export convenient `Mutex` and `RwLock` types.
 pub type Mutex<T> = lock_api::Mutex<RawMutex, T>;
 pub type RwLock<T> = lock_api::RwLock<RawRwLock, T>;
@@ -27,9 +25,8 @@ pub use once_lock::OnceLock;
 // Export the condvar types.
 pub use condvar::{Condvar, WaitTimeoutResult};
 
-// The following is derived from Rust's
-// library/std/src/sys/unix/locks/mod.rs at revision
-// 6fd7e9010db6be7605241c39eab7c5078ee2d5bd.
+// Export the raw condvar types.
+pub type RawCondvar = futex_condvar::Condvar;
 
 // std's implementation code.
 mod condvar;
@@ -41,10 +38,6 @@ mod once;
 mod once_lock;
 mod wait_wake;
 
-// Use the raw lock types from std's implementation.
-use futex_mutex::MovableMutex;
-use futex_rwlock::MovableRwLock;
-
 /// An implementation of [`lock_api::RawMutex`].
 ///
 /// All of this `RawMutex`'s methods are in its implementation of
@@ -55,7 +48,7 @@ use futex_rwlock::MovableRwLock;
 /// use rustix_futex_sync::lock_api::RawMutex as _;
 /// ```
 #[repr(transparent)]
-pub struct RawMutex(MovableMutex);
+pub struct RawMutex(futex_mutex::Mutex);
 
 /// An implementation of [`lock_api::RawRwLock`].
 ///
@@ -67,23 +60,26 @@ pub struct RawMutex(MovableMutex);
 /// use rustix_futex_sync::lock_api::RawRwLock as _;
 /// ```
 #[repr(C)]
-pub struct RawRwLock(MovableRwLock);
+pub struct RawRwLock(futex_rwlock::RwLock);
 
 // Implement the raw lock traits for our wrappers.
 
 unsafe impl lock_api::RawMutex for RawMutex {
     type GuardMarker = lock_api::GuardNoSend;
 
-    const INIT: Self = Self(MovableMutex::new());
+    const INIT: Self = Self(futex_mutex::Mutex::new());
 
+    #[inline]
     fn lock(&self) {
         self.0.lock()
     }
 
+    #[inline]
     fn try_lock(&self) -> bool {
         self.0.try_lock()
     }
 
+    #[inline]
     unsafe fn unlock(&self) {
         self.0.unlock()
     }
@@ -92,28 +88,34 @@ unsafe impl lock_api::RawMutex for RawMutex {
 unsafe impl lock_api::RawRwLock for RawRwLock {
     type GuardMarker = lock_api::GuardNoSend;
 
-    const INIT: Self = Self(MovableRwLock::new());
+    const INIT: Self = Self(futex_rwlock::RwLock::new());
 
+    #[inline]
     fn lock_shared(&self) {
         self.0.read()
     }
 
+    #[inline]
     fn try_lock_shared(&self) -> bool {
         self.0.try_read()
     }
 
+    #[inline]
     unsafe fn unlock_shared(&self) {
         self.0.read_unlock()
     }
 
+    #[inline]
     fn lock_exclusive(&self) {
         self.0.write()
     }
 
+    #[inline]
     fn try_lock_exclusive(&self) -> bool {
         self.0.try_write()
     }
 
+    #[inline]
     unsafe fn unlock_exclusive(&self) {
         self.0.write_unlock()
     }

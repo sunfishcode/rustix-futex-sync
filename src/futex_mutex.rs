@@ -8,8 +8,6 @@ use core::sync::atomic::{
 };
 use super::wait_wake::{futex_wait_timespec, futex_wake};
 
-pub type MovableMutex = Mutex;
-
 #[repr(transparent)]
 pub struct Mutex {
     /// 0: unlocked
