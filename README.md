@@ -13,11 +13,21 @@
   </p>
 </div>
 
-Linux futex-based implementations of [`Mutex`], [`RwLock`], and [`Condvar`],
-derived from the futex code in std, factored out to a standalone `no_std` crate
-using `rustix` to do the futex and `lock_api` to provide most of the public
-API.
+Linux futex-based implementations of [`Mutex`], [`RwLock`], [`Condvar`],
+[`Once`], and [`OnceLock`], as well as [`RawMutex`], [`RawRwLock`], and
+[`RawCondvar`], derived from the futex code in std, factored out to
+a standalone `no_std` crate using [`rustix`] to do the futex and [`lock_api`]
+to provide most of the public API.
+
+`lock_api` does not support poisoning, so support for poisoning is omitted.
 
 [`Mutex`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.Mutex.html
 [`RwLock`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.RwLock.html
 [`Condvar`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.Condvar.html
+[`Once`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.Once.html
+[`OnceLock`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.OnceLock.html
+[`RawMutex`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.RawMutex.html
+[`RawRwLock`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.RawRwLock.html
+[`RawCondvar`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.RawCondvar.html
+[`rustix`]: https://github.com/bytecodealliance/rustix#readme
+[`lock_api`]: https://crates.io/crates/lock_api
