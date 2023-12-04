@@ -54,17 +54,17 @@ fn condvar() {
 
     // Inside of our lock, spawn a new thread, and then wait for it to start
     thread::spawn(move || {
-        let &(ref lock, ref cvar) = &*pair2;
+        let (lock, cvar) = &*pair2;
         let mut started = lock.lock();
         *started = true;
         cvar.notify_one();
     });
 
     // wait for the thread to start up
-    let &(ref lock, ref cvar) = &*pair;
+    let (lock, cvar) = &*pair;
     let mut started = lock.lock();
     if !*started {
         started = cvar.wait(started);
     }
-    let _ = started;
+    drop(started);
 }

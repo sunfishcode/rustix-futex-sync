@@ -7,6 +7,9 @@ pub use lock_api;
 
 pub type RawCondvar = futex_condvar::MovableCondvar;
 
+/// Similar to [`std::sync::Condvar`], but without poisoning support.
+///
+/// [`std::sync::Condvar`]: https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html
 #[repr(transparent)]
 pub struct Condvar(RawCondvar);
 
@@ -79,9 +82,27 @@ mod wait_wake;
 use futex_mutex::MovableMutex;
 use futex_rwlock::MovableRwLock;
 
-// Encapsulate the std lock types to hide this detail.
+/// An implementation of [`lock_api::RawMutex`].
+///
+/// All of this `RawMutex`'s methods are in its implementation of
+/// [`lock_api::RawMutex]`]. To import that trait without conflicting
+/// with this `RawMutex` type, use:
+///
+/// ```
+/// use rustix_futex_sync::lock_api::RawMutex as _;
+/// ```
 #[repr(transparent)]
 pub struct RawMutex(MovableMutex);
+
+/// An implementation of [`lock_api::RawRwLock`].
+///
+/// All of this `RawRwLock`'s methods are in its implementation of
+/// [`lock_api::RawRwLock]`]. To import that trait without conflicting
+/// with this `RawRwLock` type, use:
+///
+/// ```
+/// use rustix_futex_sync::lock_api::RawRwLock as _;
+/// ```
 #[repr(C)]
 pub struct RawRwLock(MovableRwLock);
 

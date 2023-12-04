@@ -25,7 +25,7 @@ In this library, `Condvar`, `RawCondvar`, `RawMutex`, and `Once` are guaranteed
 to be `repr(transparent)` wrappers around a single `AtomicU32`. `RawRwLock` is
 guaranteed to be a `repr(C)` wrapper around two `AtomicU32`s. The contents of
 these `AtomicU32`s are not documented, except that all these types'
-`const fn new()` and `INIT` initialize them to all zeros.
+`const fn new()` and `INIT` are guaranteed to initialize them to all zeros.
 
 [`Mutex`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.Mutex.html
 [`RwLock`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.RwLock.html
