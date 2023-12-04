@@ -2,11 +2,11 @@
 //! library/std/src/sys/unix/locks/futex_mutex.rs at revision
 //! 98815742cf2e914ee0d7142a02322cf939c47834.
 
-use super::wait_wake::{futex_wait_timespec, futex_wake};
 use core::sync::atomic::{
     AtomicU32,
     Ordering::{Acquire, Relaxed, Release},
 };
+use super::wait_wake::{futex_wait_timespec, futex_wake};
 
 pub type MovableMutex = Mutex;
 
@@ -20,9 +20,7 @@ pub struct Mutex {
 impl Mutex {
     #[inline]
     pub const fn new() -> Self {
-        Self {
-            futex: AtomicU32::new(0),
-        }
+        Self { futex: AtomicU32::new(0) }
     }
 
     #[inline]
