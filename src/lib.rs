@@ -58,6 +58,10 @@ pub type ReentrantMutex<G, T> = lock_api::ReentrantMutex<RawMutex, G, T>;
 #[cfg_attr(doc_cfg, doc(cfg(feature = "atomic_usize")))]
 pub type ReentrantMutexGuard<'a, G, T> = lock_api::ReentrantMutexGuard<'a, RawMutex, G, T>;
 
+// Export the once types.
+pub use once::{Once, OnceState};
+pub use once_lock::OnceLock;
+
 // The following is derived from Rust's
 // library/std/src/sys/unix/locks/mod.rs at revision
 // 6fd7e9010db6be7605241c39eab7c5078ee2d5bd.
@@ -65,7 +69,10 @@ pub type ReentrantMutexGuard<'a, G, T> = lock_api::ReentrantMutexGuard<'a, RawMu
 // std's implementation code.
 mod condvar;
 mod futex;
+mod futex_once;
 mod futex_rwlock;
+mod once;
+mod once_lock;
 mod wait_wake;
 
 // Use the raw lock types from std's implementation.
