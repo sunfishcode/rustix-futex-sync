@@ -8,8 +8,6 @@ use core::time::Duration;
 use super::RawMutex;
 use lock_api::RawMutex as _;
 
-pub type MovableCondvar = Condvar;
-
 #[repr(transparent)]
 pub struct Condvar {
     // The value of this atomic is simply incremented on every notification.
