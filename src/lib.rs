@@ -7,47 +7,6 @@ pub use lock_api;
 
 pub type RawCondvar = futex_condvar::MovableCondvar;
 
-/// Similar to [`std::sync::Condvar`], but without poisoning support.
-///
-/// [`std::sync::Condvar`]: https://doc.rust-lang.org/stable/std/sync/struct.Condvar.html
-#[repr(transparent)]
-pub struct Condvar(RawCondvar);
-
-impl Condvar {
-    #[inline]
-    pub const fn new() -> Self {
-        Self(futex_condvar::MovableCondvar::new())
-    }
-
-    #[inline]
-    pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
-        unsafe {
-            self.0.wait(MutexGuard::mutex(&guard).raw());
-        }
-        guard
-    }
-
-    #[inline]
-    pub fn wait_timeout<'a, T>(
-        &self,
-        guard: MutexGuard<'a, T>,
-        dur: core::time::Duration,
-    ) -> (MutexGuard<'a, T>, bool) {
-        let result = unsafe { self.0.wait_timeout(MutexGuard::mutex(&guard).raw(), dur) };
-        (guard, result)
-    }
-
-    #[inline]
-    pub fn notify_one(&self) {
-        self.0.notify_one()
-    }
-
-    #[inline]
-    pub fn notify_all(&self) {
-        self.0.notify_all()
-    }
-}
-
 // Export convenient `Mutex` and `RwLock` types.
 pub type Mutex<T> = lock_api::Mutex<RawMutex, T>;
 pub type RwLock<T> = lock_api::RwLock<RawRwLock, T>;
@@ -65,11 +24,15 @@ pub type ReentrantMutexGuard<'a, G, T> = lock_api::ReentrantMutexGuard<'a, RawMu
 pub use once::{Once, OnceState};
 pub use once_lock::OnceLock;
 
+// Export the condvar types.
+pub use condvar::{Condvar, WaitTimeoutResult};
+
 // The following is derived from Rust's
 // library/std/src/sys/unix/locks/mod.rs at revision
 // 6fd7e9010db6be7605241c39eab7c5078ee2d5bd.
 
 // std's implementation code.
+mod condvar;
 mod futex_condvar;
 mod futex_mutex;
 mod futex_once;
