@@ -10,6 +10,7 @@ use lock_api::RawMutex as _;
 
 pub type MovableCondvar = Condvar;
 
+#[repr(transparent)]
 pub struct Condvar {
     // The value of this atomic is simply incremented on every notification.
     // This is used by `.wait()` to not miss any notifications after

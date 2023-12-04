@@ -32,6 +32,7 @@ use super::futex_once as sys;
 /// });
 /// ```
 //#[stable(feature = "rust1", since = "1.0.0")]
+#[repr(transparent)]
 pub struct Once {
     inner: sys::Once,
 }
