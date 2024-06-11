@@ -6,7 +6,6 @@ use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
 use super::wait_wake::{futex_wait, futex_wake, futex_wake_all};
 use core::time::Duration;
 use super::RawMutex;
-use lock_api::RawMutex as _;
 
 #[repr(transparent)]
 pub struct Condvar {
