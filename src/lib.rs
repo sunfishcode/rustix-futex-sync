@@ -6,6 +6,10 @@
 #[cfg(feature = "lock_api")]
 pub use lock_api;
 
+// If we don't have the real `lock_api` crate, use our polyfills.
+#[cfg(not(feature = "lock_api"))]
+pub mod lock_api;
+
 // Export convenient `Mutex` and `RwLock` types.
 #[cfg(feature = "lock_api")]
 pub type Mutex<T> = lock_api::Mutex<RawMutex, T>;
@@ -50,8 +54,9 @@ mod wait_wake;
 
 /// An implementation of [`lock_api::RawMutex`].
 ///
-/// To import [`lock_api::RawMutex`] without conflicting with this `RawMutex`
-/// type, use:
+/// All of this `RawMutex`'s methods are in its implementation of
+/// [`lock_api::RawMutex`]. To import that trait without conflicting
+/// with this `RawMutex` type, use:
 ///
 /// ```
 /// use rustix_futex_sync::lock_api::RawMutex as _;
@@ -61,8 +66,9 @@ pub struct RawMutex(futex_mutex::Mutex);
 
 /// An implementation of [`lock_api::RawRwLock`].
 ///
-/// To import [`lock_api::RawRwLock`] without conflicting with this `RawRwLock`
-/// type, use:
+/// All of this `RawRwLock`'s methods are in its implementation of
+/// [`lock_api::RawRwLock`]. To import that trait without conflicting
+/// with this `RawRwLock` type, use:
 ///
 /// ```
 /// use rustix_futex_sync::lock_api::RawRwLock as _;
@@ -72,114 +78,59 @@ pub struct RawRwLock(futex_rwlock::RwLock);
 
 // Implement the raw lock traits for our wrappers.
 
-impl RawMutex {
-    pub const INIT: Self = Self(futex_mutex::Mutex::new());
+unsafe impl lock_api::RawMutex for RawMutex {
+    type GuardMarker = lock_api::GuardNoSend;
+
+    const INIT: Self = Self(futex_mutex::Mutex::new());
 
     #[inline]
-    pub fn lock(&self) {
+    fn lock(&self) {
         self.0.lock()
     }
 
     #[inline]
-    pub fn try_lock(&self) -> bool {
+    fn try_lock(&self) -> bool {
         self.0.try_lock()
     }
 
     #[inline]
-    pub unsafe fn unlock(&self) {
+    unsafe fn unlock(&self) {
         self.0.unlock()
     }
 }
 
-#[cfg(feature = "lock_api")]
-unsafe impl lock_api::RawMutex for RawMutex {
+unsafe impl lock_api::RawRwLock for RawRwLock {
     type GuardMarker = lock_api::GuardNoSend;
 
-    const INIT: Self = Self::INIT;
+    const INIT: Self = Self(futex_rwlock::RwLock::new());
 
     #[inline]
-    fn lock(&self) {
-        self.lock()
-    }
-
-    #[inline]
-    fn try_lock(&self) -> bool {
-        self.try_lock()
-    }
-
-    #[inline]
-    unsafe fn unlock(&self) {
-        self.unlock()
-    }
-}
-
-impl RawRwLock {
-    pub const INIT: Self = Self(futex_rwlock::RwLock::new());
-
-    #[inline]
-    pub fn lock_shared(&self) {
+    fn lock_shared(&self) {
         self.0.read()
     }
 
     #[inline]
-    pub fn try_lock_shared(&self) -> bool {
+    fn try_lock_shared(&self) -> bool {
         self.0.try_read()
     }
 
     #[inline]
-    pub unsafe fn unlock_shared(&self) {
+    unsafe fn unlock_shared(&self) {
         self.0.read_unlock()
     }
 
     #[inline]
-    pub fn lock_exclusive(&self) {
+    fn lock_exclusive(&self) {
         self.0.write()
     }
 
     #[inline]
-    pub fn try_lock_exclusive(&self) -> bool {
+    fn try_lock_exclusive(&self) -> bool {
         self.0.try_write()
     }
 
     #[inline]
-    pub unsafe fn unlock_exclusive(&self) {
-        self.0.write_unlock()
-    }
-}
-
-#[cfg(feature = "lock_api")]
-unsafe impl lock_api::RawRwLock for RawRwLock {
-    type GuardMarker = lock_api::GuardNoSend;
-
-    const INIT: Self = Self::INIT;
-
-    #[inline]
-    fn lock_shared(&self) {
-        self.lock_shared()
-    }
-
-    #[inline]
-    fn try_lock_shared(&self) -> bool {
-        self.try_lock_shared()
-    }
-
-    #[inline]
-    unsafe fn unlock_shared(&self) {
-        self.unlock_shared()
-    }
-
-    #[inline]
-    fn lock_exclusive(&self) {
-        self.lock_exclusive()
-    }
-
-    #[inline]
-    fn try_lock_exclusive(&self) -> bool {
-        self.try_lock_exclusive()
-    }
-
-    #[inline]
     unsafe fn unlock_exclusive(&self) {
-        self.unlock_exclusive()
+        self.0.write_unlock()
     }
 }
