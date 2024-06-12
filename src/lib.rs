@@ -39,7 +39,7 @@ pub use once_lock::OnceLock;
 pub use condvar::{Condvar, WaitTimeoutResult};
 
 // Export the raw condvar types.
-pub type RawCondvar = futex_condvar::Condvar;
+pub use futex_condvar::Condvar as RawCondvar;
 
 // std's implementation code.
 #[cfg(feature = "lock_api")]
