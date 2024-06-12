@@ -1,9 +1,9 @@
 //! The following is derived from Rust's
 //! library/std/src/sync/rwlock/tests.rs at revision
-//! 72a25d05bf1a4b155d74139ef700ff93af6d8e22.
+//! 3ef4b083ac03fd25339be009e3ae525adab30d78.
 
 use rand::{self, Rng};
-use rustix_futex_sync::RwLock;
+use rustix_futex_sync::{RwLock, RwLockReadGuard, MappedRwLockReadGuard, RwLockWriteGuard, MappedRwLockWriteGuard};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc::channel;
 use std::sync::Arc;
@@ -63,6 +63,19 @@ fn test_rw_arc_poison_wr() {
 }
 
 #[test]
+fn test_rw_arc_poison_mapped_w_r() {
+    let arc = Arc::new(RwLock::new(1));
+    let arc2 = arc.clone();
+    let _: Result<(), _> = thread::spawn(move || {
+        let lock = arc2.write();
+        let _lock = RwLockWriteGuard::map(lock, |val| val);
+        panic!();
+    })
+    .join();
+    assert!(arc.read().is_err());
+}
+
+#[test]
 #[cfg_attr(all(target_arch = "arm", not(feature = "unwinding")), ignore)]
 fn test_rw_arc_poison_ww() {
     let arc = Arc::new(RwLock::new(1));
@@ -70,6 +83,20 @@ fn test_rw_arc_poison_ww() {
     let arc2 = arc.clone();
     let _: Result<(), _> = thread::spawn(move || {
         let _lock = arc2.write();
+        panic!();
+    })
+    .join();
+    assert!(arc.write().is_err());
+    assert!(arc.is_poisoned());
+}
+
+#[test]
+fn test_rw_arc_poison_mapped_w_w() {
+    let arc = Arc::new(RwLock::new(1));
+    let arc2 = arc.clone();
+    let _: Result<(), _> = thread::spawn(move || {
+        let lock = arc2.write();
+        let _lock = RwLockWriteGuard::map(lock, |val| val);
         panic!();
     })
     .join();
@@ -90,6 +117,21 @@ fn test_rw_arc_no_poison_rr() {
     let lock = arc.read();
     assert_eq!(*lock, 1);
 }
+
+#[test]
+fn test_rw_arc_no_poison_mapped_r_r() {
+    let arc = Arc::new(RwLock::new(1));
+    let arc2 = arc.clone();
+    let _: Result<(), _> = thread::spawn(move || {
+        let lock = arc2.read();
+        let _lock = RwLockReadGuard::map(lock, |val| val);
+        panic!();
+    })
+    .join();
+    let lock = arc.read();
+    assert_eq!(*lock, 1);
+}
+
 #[test]
 #[cfg_attr(all(target_arch = "arm", not(feature = "unwinding")), ignore)]
 fn test_rw_arc_no_poison_rw() {
@@ -98,6 +140,20 @@ fn test_rw_arc_no_poison_rw() {
     let _: Result<(), _> = thread::spawn(move || {
         let _lock = arc2.read();
         panic!()
+    })
+    .join();
+    let lock = arc.write();
+    assert_eq!(*lock, 1);
+}
+
+#[test]
+fn test_rw_arc_no_poison_mapped_r_w() {
+    let arc = Arc::new(RwLock::new(1));
+    let arc2 = arc.clone();
+    let _: Result<(), _> = thread::spawn(move || {
+        let lock = arc2.read();
+        let _lock = RwLockReadGuard::map(lock, |val| val);
+        panic!();
     })
     .join();
     let lock = arc.write();
@@ -193,6 +249,15 @@ fn test_rwlock_try_write() {
     }
 
     drop(read_guard);
+    let mapped_read_guard = RwLockReadGuard::map(lock.read(), |_| &());
+
+    let write_result = lock.try_write();
+    match write_result {
+        None => (),
+        Some(_) => assert!(false, "try_write should not succeed while mapped_read_guard is in scope"),
+    }
+
+    drop(mapped_read_guard);
 }
 
 #[test]
@@ -263,5 +328,175 @@ fn test_get_mut_poison() {
         Err(e) => assert_eq!(*e.into_inner(), NonCopy(10)),
         Ok(x) => panic!("get_mut of poisoned RwLock is Ok: {x:?}"),
     }
+}
+*/
+
+/* // `lock_api`'s `RwLockReadGuard` does not appear to support covariance.
+#[test]
+fn test_read_guard_covariance() {
+    fn do_stuff<'a>(_: RwLockReadGuard<'_, &'a i32>, _: &'a i32) {}
+    let j: i32 = 5;
+    let lock = RwLock::new(&j);
+    {
+        let i = 6;
+        do_stuff(lock.read(), &i);
+    }
+    drop(lock);
+}
+*/
+
+#[test]
+fn test_mapped_read_guard_covariance() {
+    fn do_stuff<'a>(_: MappedRwLockReadGuard<'_, &'a i32>, _: &'a i32) {}
+    let j: i32 = 5;
+    let lock = RwLock::new((&j, &j));
+    {
+        let i = 6;
+        let guard = lock.read();
+        let guard = RwLockReadGuard::map(guard, |(val, _val)| val);
+        do_stuff(guard, &i);
+    }
+    drop(lock);
+}
+
+#[test]
+fn test_mapping_mapped_guard() {
+    let arr = [0; 4];
+    let mut lock = RwLock::new(arr);
+    let guard = lock.write();
+    let guard = RwLockWriteGuard::map(guard, |arr| &mut arr[..2]);
+    let mut guard = MappedRwLockWriteGuard::map(guard, |slice| &mut slice[1..]);
+    assert_eq!(guard.len(), 1);
+    guard[0] = 42;
+    drop(guard);
+    assert_eq!(*lock.get_mut(), [0, 42, 0, 0]);
+
+    let guard = lock.read();
+    let guard = RwLockReadGuard::map(guard, |arr| &arr[..2]);
+    let guard = MappedRwLockReadGuard::map(guard, |slice| &slice[1..]);
+    assert_eq!(*guard, [42]);
+    drop(guard);
+    assert_eq!(*lock.get_mut(), [0, 42, 0, 0]);
+}
+
+/* // `RwLock` contains an `UnsafeCell` which can't be transferred across a `catch_unwind` boundary.
+#[test]
+fn panic_while_mapping_read_unlocked_no_poison() {
+    let lock = RwLock::new(());
+
+    let _ = std::panic::catch_unwind(|| {
+        let guard = lock.read();
+        let _guard = RwLockReadGuard::map::<(), _>(guard, |_| panic!());
+    });
+
+    match lock.try_write() {
+        Some(_) => {}
+        None => {
+            panic!("panicking in a RwLockReadGuard::map closure should release the read lock")
+        }
+    }
+
+    let _ = std::panic::catch_unwind(|| {
+        let guard = lock.read();
+        let _guard = RwLockReadGuard::try_map::<(), _>(guard, |_| panic!());
+    });
+
+    match lock.try_write() {
+        Some(_) => {}
+        None => {
+            panic!("panicking in a RwLockReadGuard::try_map closure should release the read lock")
+        }
+    }
+
+    let _ = std::panic::catch_unwind(|| {
+        let guard = lock.read();
+        let guard = RwLockReadGuard::map::<(), _>(guard, |val| val);
+        let _guard = MappedRwLockReadGuard::map::<(), _>(guard, |_| panic!());
+    });
+
+    match lock.try_write() {
+        Some(_) => {}
+        None => {
+            panic!("panicking in a MappedRwLockReadGuard::map closure should release the read lock")
+        }
+    }
+
+    let _ = std::panic::catch_unwind(|| {
+        let guard = lock.read();
+        let guard = RwLockReadGuard::map::<(), _>(guard, |val| val);
+        let _guard = MappedRwLockReadGuard::try_map::<(), _>(guard, |_| panic!());
+    });
+
+    match lock.try_write() {
+        Some(_) => {}
+        None => panic!(
+            "panicking in a MappedRwLockReadGuard::try_map closure should release the read lock"
+        ),
+    }
+
+    drop(lock);
+}
+
+#[test]
+fn panic_while_mapping_write_unlocked_poison() {
+    let lock = RwLock::new(());
+
+    let _ = std::panic::catch_unwind(|| {
+        let guard = lock.write();
+        let _guard = RwLockWriteGuard::map::<(), _>(guard, |_| panic!());
+    });
+
+    match lock.try_write() {
+        Some(_) => panic!("panicking in a RwLockWriteGuard::map closure should poison the RwLock"),
+        None => {
+            panic!("panicking in a RwLockWriteGuard::map closure should release the write lock")
+        }
+    }
+
+    let _ = std::panic::catch_unwind(|| {
+        let guard = lock.write();
+        let _guard = RwLockWriteGuard::try_map::<(), _>(guard, |_| panic!());
+    });
+
+    match lock.try_write() {
+        Some(_) => {
+            panic!("panicking in a RwLockWriteGuard::try_map closure should poison the RwLock")
+        }
+        None => {
+            panic!("panicking in a RwLockWriteGuard::try_map closure should release the write lock")
+        }
+    }
+
+    let _ = std::panic::catch_unwind(|| {
+        let guard = lock.write();
+        let guard = RwLockWriteGuard::map::<(), _>(guard, |val| val);
+        let _guard = MappedRwLockWriteGuard::map::<(), _>(guard, |_| panic!());
+    });
+
+    match lock.try_write() {
+        Some(_) => {
+            panic!("panicking in a MappedRwLockWriteGuard::map closure should poison the RwLock")
+        }
+        None => panic!(
+            "panicking in a MappedRwLockWriteGuard::map closure should release the write lock"
+        ),
+    }
+
+    let _ = std::panic::catch_unwind(|| {
+        let guard = lock.write();
+        let guard = RwLockWriteGuard::map::<(), _>(guard, |val| val);
+        let _guard = MappedRwLockWriteGuard::try_map::<(), _>(guard, |_| panic!());
+    });
+
+    match lock.try_write() {
+        Some(_) => panic!(
+            "panicking in a MappedRwLockWriteGuard::try_map closure should poison the RwLock"
+        ),
+        None => panic!(
+            "panicking in a MappedRwLockWriteGuard::try_map closure should release the write lock"
+        ),
+    }
+
+    drop(lock);
 }
 */
