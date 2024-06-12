@@ -288,7 +288,7 @@ fn test_mapping_mapped_guard() {
 fn panic_while_mapping_unlocked_poison() {
     let lock = Mutex::new(());
 
-    let _ = crate::panic::catch_unwind(|| {
+    let _ = std::panic::catch_unwind(|| {
         let guard = lock.lock();
         let _guard = MutexGuard::map::<(), _>(guard, |_| panic!());
     });
@@ -301,7 +301,7 @@ fn panic_while_mapping_unlocked_poison() {
         Err(TryLockError::Poisoned(_)) => {}
     }
 
-    let _ = crate::panic::catch_unwind(|| {
+    let _ = std::panic::catch_unwind(|| {
         let guard = lock.lock();
         let _guard = MutexGuard::try_map::<(), _>(guard, |_| panic!());
     });
@@ -314,7 +314,7 @@ fn panic_while_mapping_unlocked_poison() {
         Err(TryLockError::Poisoned(_)) => {}
     }
 
-    let _ = crate::panic::catch_unwind(|| {
+    let _ = std::panic::catch_unwind(|| {
         let guard = lock.lock();
         let guard = MutexGuard::map::<(), _>(guard, |val| val);
         let _guard = MappedMutexGuard::map::<(), _>(guard, |_| panic!());
@@ -328,7 +328,7 @@ fn panic_while_mapping_unlocked_poison() {
         Err(TryLockError::Poisoned(_)) => {}
     }
 
-    let _ = crate::panic::catch_unwind(|| {
+    let _ = std::panic::catch_unwind(|| {
         let guard = lock.lock();
         let guard = MutexGuard::map::<(), _>(guard, |val| val);
         let _guard = MappedMutexGuard::try_map::<(), _>(guard, |_| panic!());
