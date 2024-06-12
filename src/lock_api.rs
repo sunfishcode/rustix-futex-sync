@@ -1,8 +1,14 @@
 //! Polyfills for `lock_api` traits for when we don't have the real `lock_api`
 //! crate.
 
+/// Polyfill for [`lock_api::GuardNoSend`].
+///
+/// [`lock_api::GuardNoSend`]: https://docs.rs/lock_api/*/lock_api/struct.GuardNoSend.html
 pub struct GuardNoSend(());
 
+/// Polyfill for [`lock_api::RawMutex`].
+///
+/// [`lock_api::RawMutex`]: https://docs.rs/lock_api/*/lock_api/trait.RawMutex.html
 pub unsafe trait RawMutex {
     type GuardMarker;
 
@@ -24,6 +30,9 @@ pub unsafe trait RawMutex {
     }
 }
 
+/// Polyfill for [`lock_api::RawRwLock`].
+///
+/// [`lock_api::RawRwLock`]: https://docs.rs/lock_api/*/lock_api/trait.RawRwLock.html
 pub unsafe trait RawRwLock {
     type GuardMarker;
 
