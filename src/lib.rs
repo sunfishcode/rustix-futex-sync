@@ -3,17 +3,29 @@
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
 
 // Re-export this so that our users can use the same version we do.
+#[cfg(feature = "lock_api")]
 pub use lock_api;
 
+// If we don't have the real `lock_api` crate, use our polyfills.
+#[cfg(not(feature = "lock_api"))]
+pub mod lock_api;
+
 // Export convenient `Mutex` and `RwLock` types.
+#[cfg(feature = "lock_api")]
 pub type Mutex<T> = lock_api::Mutex<RawMutex, T>;
+#[cfg(feature = "lock_api")]
 pub type RwLock<T> = lock_api::RwLock<RawRwLock, T>;
+#[cfg(feature = "lock_api")]
 pub type MutexGuard<'a, T> = lock_api::MutexGuard<'a, RawMutex, T>;
+#[cfg(feature = "lock_api")]
 pub type RwLockReadGuard<'a, T> = lock_api::RwLockReadGuard<'a, RawRwLock, T>;
+#[cfg(feature = "lock_api")]
 pub type RwLockWriteGuard<'a, T> = lock_api::RwLockWriteGuard<'a, RawRwLock, T>;
+#[cfg(feature = "lock_api")]
 #[cfg(feature = "atomic_usize")]
 #[cfg_attr(doc_cfg, doc(cfg(feature = "atomic_usize")))]
 pub type ReentrantMutex<G, T> = lock_api::ReentrantMutex<RawMutex, G, T>;
+#[cfg(feature = "lock_api")]
 #[cfg(feature = "atomic_usize")]
 #[cfg_attr(doc_cfg, doc(cfg(feature = "atomic_usize")))]
 pub type ReentrantMutexGuard<'a, G, T> = lock_api::ReentrantMutexGuard<'a, RawMutex, G, T>;
@@ -23,12 +35,14 @@ pub use once::{Once, OnceState};
 pub use once_lock::OnceLock;
 
 // Export the condvar types.
+#[cfg(feature = "lock_api")]
 pub use condvar::{Condvar, WaitTimeoutResult};
 
 // Export the raw condvar types.
-pub type RawCondvar = futex_condvar::Condvar;
+pub use futex_condvar::Condvar as RawCondvar;
 
 // std's implementation code.
+#[cfg(feature = "lock_api")]
 mod condvar;
 mod futex_condvar;
 mod futex_mutex;
@@ -41,7 +55,7 @@ mod wait_wake;
 /// An implementation of [`lock_api::RawMutex`].
 ///
 /// All of this `RawMutex`'s methods are in its implementation of
-/// [`lock_api::RawMutex]`]. To import that trait without conflicting
+/// [`lock_api::RawMutex`]. To import that trait without conflicting
 /// with this `RawMutex` type, use:
 ///
 /// ```
@@ -53,7 +67,7 @@ pub struct RawMutex(futex_mutex::Mutex);
 /// An implementation of [`lock_api::RawRwLock`].
 ///
 /// All of this `RawRwLock`'s methods are in its implementation of
-/// [`lock_api::RawRwLock]`]. To import that trait without conflicting
+/// [`lock_api::RawRwLock`]. To import that trait without conflicting
 /// with this `RawRwLock` type, use:
 ///
 /// ```
