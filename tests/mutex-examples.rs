@@ -1,6 +1,6 @@
 //! The following is derived from the documentation tests in Rust's
 //! library/std/src/sync/mutex.rs at revision
-//! b7e68dfc945c4cf8d1753cc3a8be48a71bb39d5a.
+//! e853b50a722c09c7526683316b5471528063cccd.
 
 #[test]
 fn mutex_example_0() {
@@ -146,16 +146,6 @@ fn mutex_example_4() {
 
 #[test]
 fn mutex_example_5() {
-    use rustix_futex_sync::Mutex;
-    let mutex = Mutex::new(0);
-
-    let mut guard = mutex.lock();
-    *guard += 20;
-    //Mutex::unlock(guard);
-}
-
-#[test]
-fn mutex_example_6() {
     use std::sync::Arc;
     use rustix_futex_sync::Mutex;
     use std::thread;
@@ -171,7 +161,7 @@ fn mutex_example_6() {
 }
 
 #[test]
-fn mutex_example_7() {
+fn mutex_example_6() {
     use rustix_futex_sync::Mutex;
 
     let mutex = Mutex::new(0);
@@ -179,7 +169,7 @@ fn mutex_example_7() {
 }
 
 #[test]
-fn mutex_example_8() {
+fn mutex_example_7() {
     use rustix_futex_sync::Mutex;
 
     let mut mutex = Mutex::new(0);

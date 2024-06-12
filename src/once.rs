@@ -1,6 +1,6 @@
 //! The following is derived from Rust's
 //! library/std/src/sync/once.rs at revision
-//! c95015c2955e8507f93a1106fa3f7eaafc25308b.
+//! 22a5267c83a3e17f2b763279eb24bb632c45dc6b.
 //!
 //! A "once initialization" primitive
 //!

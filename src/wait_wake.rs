@@ -1,6 +1,6 @@
 //! The following is derived from Rust's
-//! library/std/src/sys/unix/futex.rs at revision
-//! f3579268372723bc4ff7b76090c090aa7b9e6a3a.
+//! library/std/src/sys/pal/unix/futex.rs at revision
+//! b58f647d5488dce73bba517907c44af2c2a618c4.
 
 use core::sync::atomic::AtomicU32;
 use core::time::Duration;
@@ -31,7 +31,7 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -
 }
 
 /// Like [`futex_wait`], but takes a [`Timespec`] for an optional time on the
-/// [`ClockId::Monotnic`] clock to wake up at.
+/// [`ClockId::Monotonic`] clock to wake up at.
 ///
 /// This allows callers that don't need the timeout to pass `None` and avoid
 /// statically depending on `clock_gettime`.

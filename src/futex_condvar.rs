@@ -1,6 +1,6 @@
 //! The following is derived from Rust's
-//! library/std/src/sys/unix/locks/futex_condvar.rs at revision
-//! 98815742cf2e914ee0d7142a02322cf939c47834.
+//! library/std/src/sys/sync/condvar/futex.rs at revision
+//! 22a5267c83a3e17f2b763279eb24bb632c45dc6b.
 
 use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
 use super::wait_wake::{futex_wait, futex_wake, futex_wake_all};

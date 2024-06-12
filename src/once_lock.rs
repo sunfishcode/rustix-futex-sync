@@ -1,6 +1,6 @@
 //! The following is derived from Rust's
 //! library/std/src/sync/once_lock.rs at revision
-//! a8a5704f1bc1511ddf3720a16a1ff82d3076e884.
+//! ee04e0f35ed516e4f1cc6a12c28838eaf98a16d1.
 
 use core::cell::UnsafeCell;
 use core::fmt;
@@ -9,30 +9,93 @@ use core::mem::MaybeUninit;
 use core::panic::{RefUnwindSafe, UnwindSafe};
 use crate::Once;
 
-/// A synchronization primitive which can be written to only once.
+/// A synchronization primitive which can nominally be written to only once.
 ///
 /// This type is a thread-safe [`OnceCell`], and can be used in statics.
+/// In many simple cases, you can use [`LazyLock<T, F>`] instead to get the benefits of this type
+/// with less effort: `LazyLock<T, F>` "looks like" `&T` because it initializes with `F` on deref!
+/// Where OnceLock shines is when LazyLock is too simple to support a given case, as LazyLock
+/// doesn't allow additional inputs to its function after you call [`LazyLock::new(|| ...)`].
 ///
 /// [`OnceCell`]: core::cell::OnceCell
+/// [`LazyLock<T, F>`]: https://doc.rust-lang.org/std/sync/struct.LazyLock.html
+/// [`LazyLock::new(|| ...)`]: https://doc.rust-lang.org/std/sync/struct.LazyLock.html#method.new
 ///
 /// # Examples
+///
+/// Writing to a `OnceLock` from a separate thread:
 ///
 /// ```
 /// use rustix_futex_sync::OnceLock;
 ///
-/// static CELL: OnceLock<String> = OnceLock::new();
+/// static CELL: OnceLock<usize> = OnceLock::new();
+///
+/// // `OnceLock` has not been written to yet.
 /// assert!(CELL.get().is_none());
 ///
+/// // Spawn a thread and write to `OnceLock`.
 /// std::thread::spawn(|| {
-///     let value: &String = CELL.get_or_init(|| {
-///         "Hello, World!".to_string()
-///     });
-///     assert_eq!(value, "Hello, World!");
-/// }).join().unwrap();
+///     let value = CELL.get_or_init(|| 12345);
+///     assert_eq!(value, &12345);
+/// })
+/// .join()
+/// .unwrap();
 ///
-/// let value: Option<&String> = CELL.get();
-/// assert!(value.is_some());
-/// assert_eq!(value.unwrap().as_str(), "Hello, World!");
+/// // `OnceLock` now contains the value.
+/// assert_eq!(
+///     CELL.get(),
+///     Some(&12345),
+/// );
+/// ```
+///
+/// You can use `OnceLock` to implement a type that requires "append-only" logic:
+///
+/// ```
+/// use std::sync::atomic::{AtomicU32, Ordering};
+/// use rustix_futex_sync::OnceLock;
+/// use std::thread;
+///
+/// struct OnceList<T> {
+///     data: OnceLock<T>,
+///     next: OnceLock<Box<OnceList<T>>>,
+/// }
+/// impl<T> OnceList<T> {
+///     const fn new() -> OnceList<T> {
+///         OnceList { data: OnceLock::new(), next: OnceLock::new() }
+///     }
+///     fn push(&self, value: T) {
+///         // FIXME: this impl is concise, but is also slow for long lists or many threads.
+///         // as an exercise, consider how you might improve on it while preserving the behavior
+///         if let Err(value) = self.data.set(value) {
+///             let next = self.next.get_or_init(|| Box::new(OnceList::new()));
+///             next.push(value)
+///         };
+///     }
+///     fn contains(&self, example: &T) -> bool
+///     where
+///         T: PartialEq,
+///     {
+///         self.data.get().map(|item| item == example).filter(|v| *v).unwrap_or_else(|| {
+///             self.next.get().map(|next| next.contains(example)).unwrap_or(false)
+///         })
+///     }
+/// }
+///
+/// // Let's exercise this new Sync append-only list by doing a little counting
+/// static LIST: OnceList<u32> = OnceList::new();
+/// static COUNTER: AtomicU32 = AtomicU32::new(0);
+///
+/// let vec = (0..thread::available_parallelism().unwrap().get()).map(|_| thread::spawn(|| {
+///     while let i @ 0..=1000 = COUNTER.fetch_add(1, Ordering::Relaxed) {
+///         LIST.push(i);
+///     }
+/// })).collect::<Vec<thread::JoinHandle<_>>>();
+/// vec.into_iter().for_each(|handle| handle.join().unwrap());
+///
+/// for i in 0..=1000 {
+///     assert!(LIST.contains(&i));
+/// }
+///
 /// ```
 //#[stable(feature = "once_cell", since = "1.70.0")]
 pub struct OnceLock<T> {
@@ -209,7 +272,49 @@ impl<T> OnceLock<T> {
         F: FnOnce() -> T,
     {
         //match self.get_or_try_init(|| Ok::<T, !>(f())) {
-        match self.get_or_try_init(|| Ok ::<T, ()>(f())) {
+        match self.get_or_try_init(|| Ok::<T, ()>(f())) {
+            Ok(val) => val,
+            Err(()) => panic!(),
+        }
+    }
+
+    /// Gets the mutable reference of the contents of the cell, initializing
+    /// it with `f` if the cell was empty.
+    ///
+    /// Many threads may call `get_mut_or_init` concurrently with different
+    /// initializing functions, but it is guaranteed that only one function
+    /// will be executed.
+    ///
+    /// # Panics
+    ///
+    /// If `f` panics, the panic is propagated to the caller, and the cell
+    /// remains uninitialized.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// //#![feature(once_cell_get_mut)]
+    ///
+    /// use rustix_futex_sync::OnceLock;
+    ///
+    /// let mut cell = OnceLock::new();
+    /// let value = cell.get_mut_or_init(|| 92);
+    /// assert_eq!(*value, 92);
+    ///
+    /// *value += 2;
+    /// assert_eq!(*value, 94);
+    ///
+    /// let value = cell.get_mut_or_init(|| unreachable!());
+    /// assert_eq!(*value, 94);
+    /// ```
+    #[inline]
+    //#[unstable(feature = "once_cell_get_mut", issue = "121641")]
+    pub fn get_mut_or_init<F>(&mut self, f: F) -> &mut T
+    where
+        F: FnOnce() -> T,
+    {
+        //match self.get_mut_or_try_init(|| Ok::<T, !>(f())) {
+        match self.get_mut_or_try_init(|| Ok::<T, ()>(f())) {
             Ok(val) => val,
             Err(()) => panic!(),
         }
@@ -264,6 +369,47 @@ impl<T> OnceLock<T> {
 
         // SAFETY: The inner value has been initialized
         Ok(unsafe { self.get_unchecked() })
+    }
+
+    /// Gets the mutable reference of the contents of the cell, initializing
+    /// it with `f` if the cell was empty. If the cell was empty and `f` failed,
+    /// an error is returned.
+    ///
+    /// # Panics
+    ///
+    /// If `f` panics, the panic is propagated to the caller, and
+    /// the cell remains uninitialized.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// //#![feature(once_cell_get_mut)]
+    ///
+    /// use rustix_futex_sync::OnceLock;
+    ///
+    /// let mut cell: OnceLock<u32> = OnceLock::new();
+    ///
+    /// // Failed initializers do not change the value
+    /// assert!(cell.get_mut_or_try_init(|| "not a number!".parse()).is_err());
+    /// assert!(cell.get().is_none());
+    ///
+    /// let value = cell.get_mut_or_try_init(|| "1234".parse());
+    /// assert_eq!(value, Ok(&mut 1234));
+    /// *value.unwrap() += 2;
+    /// assert_eq!(cell.get(), Some(&1236))
+    /// ```
+    #[inline]
+    //#[unstable(feature = "once_cell_get_mut", issue = "121641")]
+    pub fn get_mut_or_try_init<F, E>(&mut self, f: F) -> Result<&mut T, E>
+    where
+        F: FnOnce() -> Result<T, E>,
+    {
+        if self.get().is_none() {
+            self.initialize(f)?;
+        }
+        debug_assert!(self.is_initialized());
+        // SAFETY: The inner value has been initialized
+        Ok(unsafe { self.get_unchecked_mut() })
     }
 
     /// Consumes the `OnceLock`, returning the wrapped value. Returns

@@ -1,6 +1,6 @@
 //! The following is derived from Rust's
-//! library/std/src/sys_common/once/futex.rs at revision
-//! c1cced8d040a26f27490531e7dbffda54642982f.
+//! library/std/src/sys/sync/once/futex.rs at revision
+//! 22a5267c83a3e17f2b763279eb24bb632c45dc6b.
 
 use core::cell::Cell;
 use crate as public;

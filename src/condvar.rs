@@ -1,6 +1,6 @@
 //! The following is derived from Rust's
 //! library/std/src/sync/condvar.rs at revision
-//! d67d9890ae20492e26803d70b993ab5b03785890.
+//! 22a5267c83a3e17f2b763279eb24bb632c45dc6b.
 
 /*
 #[cfg(test)]

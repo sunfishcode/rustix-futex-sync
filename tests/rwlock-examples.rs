@@ -1,6 +1,6 @@
 //! The following is derived from the documentation tests in Rust's
 //! library/std/src/sync/rwlock.rs at revision
-//! cdf25c904e7dc6eee089e1ccebc5fbd05351dfb9.
+//! 0cd57725f9d624aed3cdaa3852a1f80f550ae275.
 
 #[test]
 fn rwlock_example_0() {

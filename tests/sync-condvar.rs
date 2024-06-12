@@ -1,6 +1,6 @@
 //! The following is derived from Rust's
 //! library/std/src/sync/condvar/tests.rs at revision
-//! 21c5f780f464b27802d0ee0f86c95eb29881096b.
+//! 34621757ea9437994ef717ac4f1928933a6e1b24.
 
 use rustix_futex_sync::{Condvar, Mutex};
 /*use std::sync::atomic::{AtomicBool, Ordering};*/
@@ -182,14 +182,14 @@ fn wait_timeout_wake() {
         let t = thread::spawn(move || {
             let _g = m2.lock();
             thread::sleep(Duration::from_millis(1));
-            notified_copy.store(true, Ordering::SeqCst);
+            notified_copy.store(true, Ordering::Relaxed);
             c2.notify_one();
         });
         let (g, timeout_res) = c.wait_timeout(g, Duration::from_millis(u64::MAX));
         assert!(!timeout_res.timed_out());
         // spurious wakeups mean this isn't necessarily true
         // so execute test again, if not notified
-        if !notified.load(Ordering::SeqCst) {
+        if !notified.load(Ordering::Relaxed) {
             t.join().unwrap();
             continue;
         }
