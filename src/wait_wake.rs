@@ -2,9 +2,10 @@
 //! library/std/src/sys/pal/unix/futex.rs at revision
 //! b58f647d5488dce73bba517907c44af2c2a618c4.
 
+use core::num::NonZeroU32;
 use core::sync::atomic::AtomicU32;
 use core::time::Duration;
-use rustix::thread::{FutexFlags, FutexOperation};
+use rustix::thread::futex;
 use rustix::time::{ClockId, Timespec};
 
 /// Wait for a futex_wake operation to wake us.
@@ -36,7 +37,6 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -
 /// This allows callers that don't need the timeout to pass `None` and avoid
 /// statically depending on `clock_gettime`.
 pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<Timespec>) -> bool {
-    use core::ptr::{null, null_mut};
     use core::sync::atomic::Ordering::Relaxed;
 
     loop {
@@ -45,19 +45,18 @@ pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<Ti
             return true;
         }
 
-        let r = unsafe {
-            // Use FUTEX_WAIT_BITSET rather than FUTEX_WAIT to be able to give an
-            // absolute time rather than a relative time.
-            rustix::thread::futex(
-                futex.as_ptr(),
-                FutexOperation::WaitBitset,
-                FutexFlags::PRIVATE,
+        let r =
+            // Use `FUTEX_WAIT_BITSET` rather than `FUTEX_WAIT` to be able to
+            // give an absolute time rather than a relative time.
+            futex::wait_bitset(
+                futex,
+                futex::Flags::PRIVATE,
                 expected,
-                timespec.as_ref().map_or(null(), |t| t as *const _),
-                null_mut(),
-                !0u32, // A full bitmask, to make it behave like a regular FUTEX_WAIT.
+                timespec,
+ // A full bitmask, to make it behave like a regular `FUTEX_WAIT`.
+                NonZeroU32::MAX
             )
-        };
+        ;
 
         match r {
             Err(rustix::io::Errno::TIMEDOUT) => return false,
@@ -72,36 +71,13 @@ pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<Ti
 /// Returns true if this actually woke up such a thread,
 /// or false if no thread was waiting on this futex.
 pub fn futex_wake(futex: &AtomicU32) -> bool {
-    use core::ptr::{null, null_mut};
-    unsafe {
-        match rustix::thread::futex(
-            futex.as_ptr(),
-            FutexOperation::Wake,
-            FutexFlags::PRIVATE,
-            1,
-            null(),
-            null_mut(),
-            0,
-        ) {
-            Err(_) | Ok(0) => false,
-            _ => true,
-        }
+    match futex::wake(futex, futex::Flags::PRIVATE, 1) {
+        Err(_) | Ok(0) => false,
+        _ => true,
     }
 }
 
 /// Wake up all threads that are waiting on futex_wait on this futex.
 pub fn futex_wake_all(futex: &AtomicU32) {
-    use core::ptr::{null, null_mut};
-    unsafe {
-        rustix::thread::futex(
-            futex.as_ptr(),
-            FutexOperation::Wake,
-            FutexFlags::PRIVATE,
-            i32::MAX as u32,
-            null(),
-            null_mut(),
-            0,
-        )
-        .ok();
-    }
+    futex::wake(futex, futex::Flags::PRIVATE, i32::MAX as u32).ok();
 }
