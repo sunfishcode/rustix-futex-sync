@@ -15,7 +15,7 @@ include = ["src", "Cargo.toml", "COPYRIGHT", "LICENSE*", "/*.md"]
 rust-version = "1.70"
 
 [dependencies]
-rustix = { version = "0.38.34", default-features = false, features = ["thread", "time"] }
+rustix = { version = "0.38.35", default-features = false, features = ["thread", "time"] }
 lock_api = { version = "0.4.7", default-features = false, optional = true }
 
 # Special dependencies used in rustc-dep-of-std mode.
@@ -38,4 +38,3 @@ rustc-dep-of-std = [
 
 [package.metadata.docs.rs]
 features = ["atomic_usize"]
-rustdoc-args = ["--cfg", "doc_cfg"]

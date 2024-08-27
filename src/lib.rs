@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![no_std]
-#![cfg_attr(doc_cfg, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 // Re-export this so that our users can use the same version we do.
 #[cfg(feature = "lock_api")]
@@ -29,11 +29,11 @@ pub type MappedRwLockReadGuard<'a, T> = lock_api::MappedRwLockReadGuard<'a, RawR
 pub type MappedRwLockWriteGuard<'a, T> = lock_api::MappedRwLockWriteGuard<'a, RawRwLock, T>;
 #[cfg(feature = "lock_api")]
 #[cfg(feature = "atomic_usize")]
-#[cfg_attr(doc_cfg, doc(cfg(feature = "atomic_usize")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "atomic_usize")))]
 pub type ReentrantMutex<G, T> = lock_api::ReentrantMutex<RawMutex, G, T>;
 #[cfg(feature = "lock_api")]
 #[cfg(feature = "atomic_usize")]
-#[cfg_attr(doc_cfg, doc(cfg(feature = "atomic_usize")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "atomic_usize")))]
 pub type ReentrantMutexGuard<'a, G, T> = lock_api::ReentrantMutexGuard<'a, RawMutex, G, T>;
 
 // Export the once types.
