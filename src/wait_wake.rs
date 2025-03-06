@@ -28,7 +28,7 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -
         })
     });
 
-    futex_wait_timespec(futex, expected, timespec)
+    futex_wait_timespec(futex, expected, timespec.as_ref())
 }
 
 /// Like [`futex_wait`], but takes a [`Timespec`] for an optional time on the
@@ -36,7 +36,7 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -
 ///
 /// This allows callers that don't need the timeout to pass `None` and avoid
 /// statically depending on `clock_gettime`.
-pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<Timespec>) -> bool {
+pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<&Timespec>) -> bool {
     use core::sync::atomic::Ordering::Relaxed;
 
     loop {
