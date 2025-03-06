@@ -1,6 +1,6 @@
 [package]
 name = "rustix-futex-sync"
-version = "0.2.3"
+version = "0.3.0"
 authors = [
     "Dan Gohman <dev@sunfishcode.online>",
 ]
