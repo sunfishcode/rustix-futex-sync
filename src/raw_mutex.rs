@@ -1,3 +1,5 @@
+use crate::lock_api;
+
 /// An implementation of [`lock_api::RawMutex`].
 ///
 /// All of this `RawMutex`'s methods are in its implementation of

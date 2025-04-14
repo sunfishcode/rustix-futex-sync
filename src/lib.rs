@@ -102,6 +102,7 @@ pub mod shm {
 /// shared memory or not. They are aliased as non-parameterized types in the
 /// top-level crate and in the `shm` module for better ergonomics.
 pub mod generic {
+    #[cfg(feature = "lock_api")]
     pub use crate::condvar::Condvar;
     pub use crate::futex_condvar::Condvar as RawCondvar;
     pub use crate::once::Once;

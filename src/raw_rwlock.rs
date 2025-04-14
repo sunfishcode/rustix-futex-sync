@@ -1,3 +1,5 @@
+use crate::lock_api;
+
 /// An implementation of [`lock_api::RawRwLock`].
 ///
 /// All of this `RawRwLock`'s methods are in its implementation of
