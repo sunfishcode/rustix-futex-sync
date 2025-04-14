@@ -9,7 +9,7 @@ use core::sync::atomic::{
 use super::wait_wake::{futex_wait_timespec, futex_wake, futex_wake_all};
 
 #[repr(C)]
-pub struct RwLock {
+pub struct RwLock<const SHM: bool> {
     // The state consists of a 30-bit reader counter, a 'readers waiting' flag, and a 'writers waiting' flag.
     // Bits 0..30:
     //   0: Unlocked
@@ -66,7 +66,7 @@ fn has_reached_max_readers(state: u32) -> bool {
     state & MASK == MAX_READERS
 }
 
-impl RwLock {
+impl<const SHM: bool> RwLock<SHM> {
     #[inline]
     pub const fn new() -> Self {
         Self { state: AtomicU32::new(0), writer_notify: AtomicU32::new(0) }
@@ -139,7 +139,7 @@ impl RwLock {
             }
 
             // Wait for the state to change.
-            futex_wait_timespec(&self.state, state | READERS_WAITING, None);
+            futex_wait_timespec::<SHM>(&self.state, state | READERS_WAITING, None);
 
             // Spin again after waking up.
             state = self.spin_read();
@@ -220,7 +220,7 @@ impl RwLock {
             }
 
             // Wait for the state to change.
-            futex_wait_timespec(&self.writer_notify, seq, None);
+            futex_wait_timespec::<SHM>(&self.writer_notify, seq, None);
 
             // Spin again after waking up.
             state = self.spin_write();
@@ -276,7 +276,7 @@ impl RwLock {
         // If readers are waiting, wake them all up.
         if state == READERS_WAITING {
             if self.state.compare_exchange(state, 0, Relaxed, Relaxed).is_ok() {
-                futex_wake_all(&self.state);
+                futex_wake_all::<SHM>(&self.state);
             }
         }
     }
@@ -288,7 +288,7 @@ impl RwLock {
     /// writer that was about to go to sleep.
     fn wake_writer(&self) -> bool {
         self.writer_notify.fetch_add(1, Release);
-        futex_wake(&self.writer_notify)
+        futex_wake::<SHM>(&self.writer_notify)
         // Note that FreeBSD and DragonFlyBSD don't tell us whether they woke
         // up any threads or not, and always return `false` here. That still
         // results in correct behaviour: it just means readers get woken up as

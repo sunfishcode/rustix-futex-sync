@@ -33,15 +33,15 @@ use super::futex_once as sys;
 /// ```
 //#[stable(feature = "rust1", since = "1.0.0")]
 #[repr(transparent)]
-pub struct Once {
-    inner: sys::Once,
+pub struct Once<const SHM: bool> {
+    inner: sys::Once<SHM>,
 }
 
 //#[stable(feature = "sync_once_unwind_safe", since = "1.59.0")]
-impl UnwindSafe for Once {}
+impl<const SHM: bool> UnwindSafe for Once<SHM> {}
 
 //#[stable(feature = "sync_once_unwind_safe", since = "1.59.0")]
-impl RefUnwindSafe for Once {}
+impl<const SHM: bool> RefUnwindSafe for Once<SHM> {}
 
 /// State yielded to [`Once::call_once_force()`]’s closure parameter. The state
 /// can be used to query the poison status of the [`Once`].
@@ -77,13 +77,13 @@ pub(crate) enum ExclusiveState {
 pub const ONCE_INIT: Once = Once::new();
 */
 
-impl Once {
+impl<const SHM: bool> Once<SHM> {
     /// Creates a new `Once` value.
     #[inline]
     //#[stable(feature = "once_new", since = "1.2.0")]
     //#[rustc_const_stable(feature = "const_once_new", since = "1.32.0")]
     #[must_use]
-    pub const fn new() -> Once {
+    pub const fn new() -> Self {
         Once { inner: sys::Once::new() }
     }
 
@@ -282,7 +282,7 @@ impl Once {
 }
 
 //#[stable(feature = "std_debug", since = "1.16.0")]
-impl fmt::Debug for Once {
+impl<const SHM: bool> fmt::Debug for Once<SHM> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Once").finish_non_exhaustive()
     }

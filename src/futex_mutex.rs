@@ -12,7 +12,7 @@ type Atomic = atomic::AtomicU32;
 type State = u32;
 
 #[repr(transparent)]
-pub struct Mutex {
+pub struct Mutex<const SHM: bool> {
     futex: Atomic,
 }
 
@@ -20,7 +20,7 @@ const UNLOCKED: State = 0;
 const LOCKED: State = 1; // locked, no other threads waiting
 const CONTENDED: State = 2; // locked, and other threads waiting (contended)
 
-impl Mutex {
+impl<const SHM: bool> Mutex<SHM> {
     #[inline]
     pub const fn new() -> Self {
         Self { futex: Atomic::new(UNLOCKED) }
@@ -62,7 +62,7 @@ impl Mutex {
             }
 
             // Wait for the futex to change state, assuming it is still CONTENDED.
-            futex_wait_timespec(&self.futex, CONTENDED, None);
+            futex_wait_timespec::<SHM>(&self.futex, CONTENDED, None);
 
             // Spin again after waking up.
             state = self.spin();
@@ -100,6 +100,6 @@ impl Mutex {
 
     #[cold]
     fn wake(&self) {
-        futex_wake(&self.futex);
+        futex_wake::<SHM>(&self.futex);
     }
 }

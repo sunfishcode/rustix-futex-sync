@@ -13,7 +13,7 @@ use rustix::time::{ClockId, Timespec};
 /// Returns directly if the futex doesn't hold the expected value.
 ///
 /// Returns false on timeout, and true in all other cases.
-pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -> bool {
+pub fn futex_wait<const SHM: bool>(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -> bool {
     // Calculate the timeout as an absolute timespec.
     //
     // Overflows are rounded up to an infinite timeout (None).
@@ -28,7 +28,7 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -
         })
     });
 
-    futex_wait_timespec(futex, expected, timespec.as_ref())
+    futex_wait_timespec::<SHM>(futex, expected, timespec.as_ref())
 }
 
 /// Like [`futex_wait`], but takes a [`Timespec`] for an optional time on the
@@ -36,8 +36,14 @@ pub fn futex_wait(futex: &AtomicU32, expected: u32, timeout: Option<Duration>) -
 ///
 /// This allows callers that don't need the timeout to pass `None` and avoid
 /// statically depending on `clock_gettime`.
-pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<&Timespec>) -> bool {
+pub fn futex_wait_timespec<const SHM: bool>(futex: &AtomicU32, expected: u32, timespec: Option<&Timespec>) -> bool {
     use core::sync::atomic::Ordering::Relaxed;
+
+    let flags = if SHM {
+        futex::Flags::empty()
+    } else {
+        futex::Flags::PRIVATE
+    };
 
     loop {
         // No need to wait if the value already changed.
@@ -50,7 +56,7 @@ pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<&T
             // give an absolute time rather than a relative time.
             futex::wait_bitset(
                 futex,
-                futex::Flags::PRIVATE,
+                flags,
                 expected,
                 timespec,
  // A full bitmask, to make it behave like a regular `FUTEX_WAIT`.
@@ -70,14 +76,26 @@ pub fn futex_wait_timespec(futex: &AtomicU32, expected: u32, timespec: Option<&T
 ///
 /// Returns true if this actually woke up such a thread,
 /// or false if no thread was waiting on this futex.
-pub fn futex_wake(futex: &AtomicU32) -> bool {
-    match futex::wake(futex, futex::Flags::PRIVATE, 1) {
+pub fn futex_wake<const SHM: bool>(futex: &AtomicU32) -> bool {
+    let flags = if SHM {
+        futex::Flags::empty()
+    } else {
+        futex::Flags::PRIVATE
+    };
+
+    match futex::wake(futex, flags, 1) {
         Err(_) | Ok(0) => false,
         _ => true,
     }
 }
 
 /// Wake up all threads that are waiting on futex_wait on this futex.
-pub fn futex_wake_all(futex: &AtomicU32) {
-    futex::wake(futex, futex::Flags::PRIVATE, i32::MAX as u32).ok();
+pub fn futex_wake_all<const SHM: bool>(futex: &AtomicU32) {
+    let flags = if SHM {
+        futex::Flags::empty()
+    } else {
+        futex::Flags::PRIVATE
+    };
+
+    futex::wake(futex, flags, i32::MAX as u32).ok();
 }

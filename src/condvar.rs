@@ -8,7 +8,7 @@ mod tests;
 */
 
 use core::fmt;
-use crate::{MutexGuard, RawCondvar};
+use crate::generic::{MutexGuard, RawCondvar};
 use core::time::Duration;
 
 /// A type indicating whether a timed wait on a condition variable returned
@@ -114,11 +114,11 @@ impl WaitTimeoutResult {
 /// ```
 //#[stable(feature = "rust1", since = "1.0.0")]
 #[repr(transparent)]
-pub struct Condvar {
-    inner: RawCondvar,
+pub struct Condvar<const SHM: bool> {
+    inner: RawCondvar<SHM>,
 }
 
-impl Condvar {
+impl<const SHM: bool> Condvar<SHM> {
     /// Creates a new condition variable which is ready to be waited on and
     /// notified.
     ///
@@ -133,7 +133,7 @@ impl Condvar {
     //#[rustc_const_stable(feature = "const_locks", since = "1.63.0")]
     #[must_use]
     #[inline]
-    pub const fn new() -> Condvar {
+    pub const fn new() -> Self {
         Condvar { inner: RawCondvar::new() }
     }
 
@@ -194,7 +194,7 @@ impl Condvar {
     /// }
     /// ```
     //#[stable(feature = "rust1", since = "1.0.0")]
-    pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T>) -> MutexGuard<'a, T> {
+    pub fn wait<'a, T>(&self, guard: MutexGuard<'a, T, SHM>) -> MutexGuard<'a, T, SHM> {
         unsafe {
             self.inner.wait(MutexGuard::mutex(&guard).raw());
         }
@@ -247,9 +247,9 @@ impl Condvar {
     //#[stable(feature = "wait_until", since = "1.42.0")]
     pub fn wait_while<'a, T, F>(
         &self,
-        mut guard: MutexGuard<'a, T>,
+        mut guard: MutexGuard<'a, T, SHM>,
         mut condition: F,
-    ) -> MutexGuard<'a, T>
+    ) -> MutexGuard<'a, T, SHM>
     where
         F: FnMut(&mut T) -> bool,
     {
@@ -317,9 +317,9 @@ impl Condvar {
     #[deprecated(since = "1.6.0", note = "replaced by `rustix_futex_sync::Condvar::wait_timeout`")]
     pub fn wait_timeout_ms<'a, T>(
         &self,
-        guard: MutexGuard<'a, T>,
+        guard: MutexGuard<'a, T, SHM>,
         ms: u32,
-    ) -> (MutexGuard<'a, T>, bool) {
+    ) -> (MutexGuard<'a, T, SHM>, bool) {
         let res = self.wait_timeout(guard, Duration::from_millis(ms as u64));
         (res.0, !res.1.timed_out())
     }
@@ -389,9 +389,9 @@ impl Condvar {
     //#[stable(feature = "wait_timeout", since = "1.5.0")]
     pub fn wait_timeout<'a, T>(
         &self,
-        guard: MutexGuard<'a, T>,
+        guard: MutexGuard<'a, T, SHM>,
         dur: Duration,
-    ) -> (MutexGuard<'a, T>, WaitTimeoutResult) {
+    ) -> (MutexGuard<'a, T, SHM>, WaitTimeoutResult) {
         let result = unsafe {
             self.inner
                 .wait_timeout(MutexGuard::mutex(&guard).raw(), dur)
@@ -455,10 +455,10 @@ impl Condvar {
     //#[stable(feature = "wait_timeout_until", since = "1.42.0")]
     pub fn wait_timeout_while<'a, T, F>(
         &self,
-        mut guard: MutexGuard<'a, T>,
+        mut guard: MutexGuard<'a, T, SHM>,
         dur: Duration,
         mut condition: F,
-    ) -> (MutexGuard<'a, T>, WaitTimeoutResult)
+    ) -> (MutexGuard<'a, T, SHM>, WaitTimeoutResult)
     where
         F: FnMut(&mut T) -> bool,
     {
@@ -582,16 +582,16 @@ impl Condvar {
 }
 
 //#[stable(feature = "std_debug", since = "1.16.0")]
-impl fmt::Debug for Condvar {
+impl<const SHM: bool> fmt::Debug for Condvar<SHM> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Condvar").finish_non_exhaustive()
     }
 }
 
 //#[stable(feature = "condvar_default", since = "1.10.0")]
-impl Default for Condvar {
+impl<const SHM: bool> Default for Condvar<SHM> {
     /// Creates a `Condvar` which is ready to be waited on and notified.
-    fn default() -> Condvar {
+    fn default() -> Self {
         Condvar::new()
     }
 }

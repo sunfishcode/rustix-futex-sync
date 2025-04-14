@@ -27,6 +27,11 @@ guaranteed to be a `repr(C)` wrapper around two `AtomicU32`s. The contents of
 these `AtomicU32`s are not documented, except that all these types'
 `const fn new()` and `INIT` are guaranteed to initialize them to all zeros.
 
+These types use the `FUTEX_PRIVATE_FLAG` flag so they don't work for
+synchronizing in memory shared between multiple processes. Enabling the "shm"
+feature enables the `shm` module, which contains shared-memory versions of all
+the main types.
+
 [`Mutex`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.Mutex.html
 [`RwLock`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/type.RwLock.html
 [`Condvar`]: https://docs.rs/rustix-futex-sync/latest/rustix_futex_sync/struct.Condvar.html

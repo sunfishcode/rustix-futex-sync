@@ -29,6 +29,7 @@ rand = "0.8.5"
 default = ["lock_api"]
 nightly = ["lock_api?/nightly"]
 atomic_usize = ["lock_api?/atomic_usize"]
+shm = []
 
 rustc-dep-of-std = [
     "dep:core",
@@ -37,4 +38,4 @@ rustc-dep-of-std = [
 ]
 
 [package.metadata.docs.rs]
-features = ["atomic_usize"]
+features = ["atomic_usize", "shm"]
