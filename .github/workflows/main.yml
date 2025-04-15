@@ -118,10 +118,10 @@ jobs:
 
     - name: cargo test
       run: |
-        cargo test
+        cargo test --features=atomic_usize,shm
       env:
         RUST_BACKTRACE: 1
 
     - name: cargo check --no-default-features
       run: |
-        cargo check --no-default-features
+        cargo check --no-default-features --features=atomic_usize,shm

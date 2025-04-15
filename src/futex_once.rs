@@ -57,30 +57,30 @@ impl OnceState {
     }
 }
 
-struct CompletionGuard<'a> {
+struct CompletionGuard<'a, const SHM: bool> {
     state: &'a AtomicU32,
     set_state_on_drop_to: u32,
 }
 
-impl<'a> Drop for CompletionGuard<'a> {
+impl<'a, const SHM: bool> Drop for CompletionGuard<'a, SHM> {
     fn drop(&mut self) {
         // Use release ordering to propagate changes to all threads checking
         // up on the Once. `futex_wake_all` does its own synchronization, hence
         // we do not need `AcqRel`.
         if self.state.swap(self.set_state_on_drop_to, Release) == QUEUED {
-            futex_wake_all(&self.state);
+            futex_wake_all::<SHM>(&self.state);
         }
     }
 }
 
 #[repr(transparent)]
-pub struct Once {
+pub struct Once<const SHM: bool> {
     state: AtomicU32,
 }
 
-impl Once {
+impl<const SHM: bool> Once<SHM> {
     #[inline]
-    pub const fn new() -> Once {
+    pub const fn new() -> Once<SHM> {
         Once { state: AtomicU32::new(INCOMPLETE) }
     }
 
@@ -128,7 +128,7 @@ impl Once {
                     // wake them up on drop.
                     let mut waiter_queue =
                         //CompletionGuard { state: &self.state, set_state_on_drop_to: POISONED };
-                        CompletionGuard { state: &self.state, set_state_on_drop_to: INCOMPLETE };
+                        CompletionGuard::<SHM> { state: &self.state, set_state_on_drop_to: INCOMPLETE };
                     // Run the function, letting it know if we're poisoned or not.
                     let f_state = public::OnceState {
                         inner: OnceState {
@@ -149,7 +149,7 @@ impl Once {
                         }
                     }
 
-                    futex_wait(&self.state, QUEUED, None);
+                    futex_wait::<SHM>(&self.state, QUEUED, None);
                     state = self.state.load(Acquire);
                 }
                 COMPLETE => return,

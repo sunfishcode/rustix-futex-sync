@@ -7,7 +7,7 @@ use core::fmt;
 use core::marker::PhantomData;
 use core::mem::MaybeUninit;
 use core::panic::{RefUnwindSafe, UnwindSafe};
-use crate::Once;
+use crate::generic::Once;
 
 /// A synchronization primitive which can nominally be written to only once.
 ///
@@ -98,8 +98,8 @@ use crate::Once;
 ///
 /// ```
 //#[stable(feature = "once_cell", since = "1.70.0")]
-pub struct OnceLock<T> {
-    once: Once,
+pub struct OnceLock<T, const SHM: bool> {
+    once: Once<SHM>,
     // Whether or not the value is initialized is tracked by `once.is_completed()`.
     value: UnsafeCell<MaybeUninit<T>>,
     /// `PhantomData` to make sure dropck understands we're dropping T in our Drop impl.
@@ -122,13 +122,13 @@ pub struct OnceLock<T> {
     _marker: PhantomData<T>,
 }
 
-impl<T> OnceLock<T> {
+impl<T, const SHM: bool> OnceLock<T, SHM> {
     /// Creates a new empty cell.
     #[inline]
     #[must_use]
     //#[stable(feature = "once_cell", since = "1.70.0")]
     //#[rustc_const_stable(feature = "once_cell", since = "1.70.0")]
-    pub const fn new() -> OnceLock<T> {
+    pub const fn new() -> Self {
         OnceLock {
             once: Once::new(),
             value: UnsafeCell::new(MaybeUninit::uninit()),
@@ -529,17 +529,17 @@ impl<T> OnceLock<T> {
 // then destroyed by A. That is, destructor observes
 // a sent value.
 //#[stable(feature = "once_cell", since = "1.70.0")]
-unsafe impl<T: Sync + Send> Sync for OnceLock<T> {}
+unsafe impl<T: Sync + Send, const SHM: bool> Sync for OnceLock<T, SHM> {}
 //#[stable(feature = "once_cell", since = "1.70.0")]
-unsafe impl<T: Send> Send for OnceLock<T> {}
+unsafe impl<T: Send, const SHM: bool> Send for OnceLock<T, SHM> {}
 
 //#[stable(feature = "once_cell", since = "1.70.0")]
-impl<T: RefUnwindSafe + UnwindSafe> RefUnwindSafe for OnceLock<T> {}
+impl<T: RefUnwindSafe + UnwindSafe, const SHM: bool> RefUnwindSafe for OnceLock<T, SHM> {}
 //#[stable(feature = "once_cell", since = "1.70.0")]
-impl<T: UnwindSafe> UnwindSafe for OnceLock<T> {}
+impl<T: UnwindSafe, const SHM: bool> UnwindSafe for OnceLock<T, SHM> {}
 
 //#[stable(feature = "once_cell", since = "1.70.0")]
-impl<T> Default for OnceLock<T> {
+impl<T, const SHM: bool> Default for OnceLock<T, SHM> {
     /// Creates a new empty cell.
     ///
     /// # Example
@@ -552,13 +552,13 @@ impl<T> Default for OnceLock<T> {
     /// }
     /// ```
     #[inline]
-    fn default() -> OnceLock<T> {
+    fn default() -> Self {
         OnceLock::new()
     }
 }
 
 //#[stable(feature = "once_cell", since = "1.70.0")]
-impl<T: fmt::Debug> fmt::Debug for OnceLock<T> {
+impl<T: fmt::Debug, const SHM: bool> fmt::Debug for OnceLock<T, SHM> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut d = f.debug_tuple("OnceLock");
         match self.get() {
@@ -570,9 +570,9 @@ impl<T: fmt::Debug> fmt::Debug for OnceLock<T> {
 }
 
 //#[stable(feature = "once_cell", since = "1.70.0")]
-impl<T: Clone> Clone for OnceLock<T> {
+impl<T: Clone, const SHM: bool> Clone for OnceLock<T, SHM> {
     #[inline]
-    fn clone(&self) -> OnceLock<T> {
+    fn clone(&self) -> Self {
         let cell = Self::new();
         if let Some(value) = self.get() {
             match cell.set(value.clone()) {
@@ -585,7 +585,7 @@ impl<T: Clone> Clone for OnceLock<T> {
 }
 
 //#[stable(feature = "once_cell", since = "1.70.0")]
-impl<T> From<T> for OnceLock<T> {
+impl<T, const SHM: bool> From<T> for OnceLock<T, SHM> {
     /// Create a new cell with its contents set to `value`.
     ///
     /// # Example
@@ -612,18 +612,18 @@ impl<T> From<T> for OnceLock<T> {
 }
 
 //#[stable(feature = "once_cell", since = "1.70.0")]
-impl<T: PartialEq> PartialEq for OnceLock<T> {
+impl<T: PartialEq, const SHM: bool> PartialEq for OnceLock<T, SHM> {
     #[inline]
-    fn eq(&self, other: &OnceLock<T>) -> bool {
+    fn eq(&self, other: &Self) -> bool {
         self.get() == other.get()
     }
 }
 
 //#[stable(feature = "once_cell", since = "1.70.0")]
-impl<T: Eq> Eq for OnceLock<T> {}
+impl<T: Eq, const SHM: bool> Eq for OnceLock<T, SHM> {}
 
 //#[stable(feature = "once_cell", since = "1.70.0")]
-/*unsafe*/ impl</*#[may_dangle]*/ T> Drop for OnceLock<T> {
+/*unsafe*/ impl</*#[may_dangle]*/ T, const SHM: bool> Drop for OnceLock<T, SHM> {
     #[inline]
     fn drop(&mut self) {
         if self.is_initialized() {

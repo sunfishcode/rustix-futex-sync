@@ -10,42 +10,139 @@ pub use lock_api;
 #[cfg(not(feature = "lock_api"))]
 pub mod lock_api;
 
-// Export convenient `Mutex` and `RwLock` types.
 #[cfg(feature = "lock_api")]
-pub type Mutex<T> = lock_api::Mutex<RawMutex, T>;
+pub use condvar::WaitTimeoutResult;
+pub use once::OnceState;
+
+// Non-shared API.
+
+pub type Once = generic::Once<false>;
 #[cfg(feature = "lock_api")]
-pub type RwLock<T> = lock_api::RwLock<RawRwLock, T>;
+pub type Condvar = generic::Condvar<false>;
+pub type RawCondvar = generic::RawCondvar<false>;
+pub type RawMutex = generic::RawMutex<false>;
+pub type RawRwLock = generic::RawRwLock<false>;
+pub type OnceLock<T> = generic::OnceLock<T, false>;
 #[cfg(feature = "lock_api")]
-pub type MutexGuard<'a, T> = lock_api::MutexGuard<'a, RawMutex, T>;
+pub type Mutex<T> = generic::Mutex<T, false>;
 #[cfg(feature = "lock_api")]
-pub type MappedMutexGuard<'a, T> = lock_api::MappedMutexGuard<'a, RawMutex, T>;
+pub type RwLock<T> = generic::RwLock<T, false>;
 #[cfg(feature = "lock_api")]
-pub type RwLockReadGuard<'a, T> = lock_api::RwLockReadGuard<'a, RawRwLock, T>;
+pub type MutexGuard<'a, T> = generic::MutexGuard<'a, T, false>;
 #[cfg(feature = "lock_api")]
-pub type RwLockWriteGuard<'a, T> = lock_api::RwLockWriteGuard<'a, RawRwLock, T>;
+pub type MappedMutexGuard<'a, T> = generic::MappedMutexGuard<'a, T, false>;
 #[cfg(feature = "lock_api")]
-pub type MappedRwLockReadGuard<'a, T> = lock_api::MappedRwLockReadGuard<'a, RawRwLock, T>;
+pub type RwLockReadGuard<'a, T> = generic::RwLockReadGuard<'a, T, false>;
 #[cfg(feature = "lock_api")]
-pub type MappedRwLockWriteGuard<'a, T> = lock_api::MappedRwLockWriteGuard<'a, RawRwLock, T>;
+pub type RwLockWriteGuard<'a, T> = generic::RwLockWriteGuard<'a, T, false>;
+#[cfg(feature = "lock_api")]
+pub type MappedRwLockReadGuard<'a, T> = generic::MappedRwLockReadGuard<'a, T, false>;
+#[cfg(feature = "lock_api")]
+pub type MappedRwLockWriteGuard<'a, T> = generic::MappedRwLockWriteGuard<'a, T, false>;
 #[cfg(feature = "lock_api")]
 #[cfg(feature = "atomic_usize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "atomic_usize")))]
-pub type ReentrantMutex<G, T> = lock_api::ReentrantMutex<RawMutex, G, T>;
+pub type ReentrantMutex<G, T> = generic::ReentrantMutex<G, T, false>;
 #[cfg(feature = "lock_api")]
 #[cfg(feature = "atomic_usize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "atomic_usize")))]
-pub type ReentrantMutexGuard<'a, G, T> = lock_api::ReentrantMutexGuard<'a, RawMutex, G, T>;
+pub type ReentrantMutexGuard<'a, G, T> = generic::ReentrantMutexGuard<'a, G, T, false>;
 
-// Export the once types.
-pub use once::{Once, OnceState};
-pub use once_lock::OnceLock;
+/// Shared-memory API.
+///
+/// The types in this module behave the same as the types defined at the top
+/// level of this crate, except that they don't set the `FUTEX_PRIVATE_FLAG`
+/// flag, so they can be used on memory shared with other processes.
+///
+/// See [the Linux documentation] for more information about
+/// `FUTEX_PRIVATE_FLAG`.
+///
+/// [the Linux documentation]: https://man7.org/linux/man-pages/man2/futex.2.html
+#[cfg(feature = "shm")]
+#[cfg_attr(docsrs, doc(cfg(feature = "shm")))]
+pub mod shm {
+    use crate::generic;
 
-// Export the condvar types.
-#[cfg(feature = "lock_api")]
-pub use condvar::{Condvar, WaitTimeoutResult};
+    pub use super::lock_api;
 
-// Export the raw condvar types.
-pub use futex_condvar::Condvar as RawCondvar;
+    pub type Once = generic::Once<true>;
+    #[cfg(feature = "lock_api")]
+    pub type Condvar = generic::Condvar<true>;
+    pub type RawCondvar = generic::RawCondvar<true>;
+    pub type RawMutex = generic::RawMutex<true>;
+    pub type RawRwLock = generic::RawRwLock<true>;
+    pub type OnceLock<T> = generic::OnceLock<T, true>;
+    #[cfg(feature = "lock_api")]
+    pub type Mutex<T> = generic::Mutex<T, true>;
+    #[cfg(feature = "lock_api")]
+    pub type RwLock<T> = generic::RwLock<T, true>;
+    #[cfg(feature = "lock_api")]
+    pub type MutexGuard<'a, T> = generic::MutexGuard<'a, T, true>;
+    #[cfg(feature = "lock_api")]
+    pub type MappedMutexGuard<'a, T> = generic::MappedMutexGuard<'a, T, true>;
+    #[cfg(feature = "lock_api")]
+    pub type RwLockReadGuard<'a, T> = generic::RwLockReadGuard<'a, T, true>;
+    #[cfg(feature = "lock_api")]
+    pub type RwLockWriteGuard<'a, T> = generic::RwLockWriteGuard<'a, T, true>;
+    #[cfg(feature = "lock_api")]
+    pub type MappedRwLockReadGuard<'a, T> = generic::MappedRwLockReadGuard<'a, T, true>;
+    #[cfg(feature = "lock_api")]
+    pub type MappedRwLockWriteGuard<'a, T> = generic::MappedRwLockWriteGuard<'a, T, true>;
+    #[cfg(feature = "lock_api")]
+    #[cfg(feature = "atomic_usize")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "atomic_usize")))]
+    pub type ReentrantMutex<G, T> = generic::ReentrantMutex<G, T, true>;
+    #[cfg(feature = "lock_api")]
+    #[cfg(feature = "atomic_usize")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "atomic_usize")))]
+    pub type ReentrantMutexGuard<'a, G, T> = generic::ReentrantMutexGuard<'a, G, T, true>;
+}
+
+/// Types and traits with a `const SHM: bool>` generic paramters.
+///
+/// These are the generic types that are parameterized on whether they support
+/// shared memory or not. They are aliased as non-parameterized types in the
+/// top-level crate and in the `shm` module for better ergonomics.
+pub mod generic {
+    #[cfg(feature = "lock_api")]
+    pub use crate::condvar::Condvar;
+    pub use crate::futex_condvar::Condvar as RawCondvar;
+    pub use crate::once::Once;
+    pub use crate::once_lock::OnceLock;
+    pub use crate::raw_mutex::RawMutex;
+    pub use crate::raw_rwlock::RawRwLock;
+
+    #[cfg(feature = "lock_api")]
+    pub type Mutex<T, const SHM: bool> = lock_api::Mutex<RawMutex<SHM>, T>;
+    #[cfg(feature = "lock_api")]
+    pub type RwLock<T, const SHM: bool> = lock_api::RwLock<RawRwLock<SHM>, T>;
+    #[cfg(feature = "lock_api")]
+    pub type MutexGuard<'a, T, const SHM: bool> = lock_api::MutexGuard<'a, RawMutex<SHM>, T>;
+    #[cfg(feature = "lock_api")]
+    pub type MappedMutexGuard<'a, T, const SHM: bool> =
+        lock_api::MappedMutexGuard<'a, RawMutex<SHM>, T>;
+    #[cfg(feature = "lock_api")]
+    pub type RwLockReadGuard<'a, T, const SHM: bool> =
+        lock_api::RwLockReadGuard<'a, RawRwLock<SHM>, T>;
+    #[cfg(feature = "lock_api")]
+    pub type RwLockWriteGuard<'a, T, const SHM: bool> =
+        lock_api::RwLockWriteGuard<'a, RawRwLock<SHM>, T>;
+    #[cfg(feature = "lock_api")]
+    pub type MappedRwLockReadGuard<'a, T, const SHM: bool> =
+        lock_api::MappedRwLockReadGuard<'a, RawRwLock<SHM>, T>;
+    #[cfg(feature = "lock_api")]
+    pub type MappedRwLockWriteGuard<'a, T, const SHM: bool> =
+        lock_api::MappedRwLockWriteGuard<'a, RawRwLock<SHM>, T>;
+    #[cfg(feature = "lock_api")]
+    #[cfg(feature = "atomic_usize")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "atomic_usize")))]
+    pub type ReentrantMutex<G, T, const SHM: bool> = lock_api::ReentrantMutex<RawMutex<SHM>, G, T>;
+    #[cfg(feature = "lock_api")]
+    #[cfg(feature = "atomic_usize")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "atomic_usize")))]
+    pub type ReentrantMutexGuard<'a, G, T, const SHM: bool> =
+        lock_api::ReentrantMutexGuard<'a, RawMutex<SHM>, G, T>;
+}
 
 // std's implementation code.
 #[cfg(feature = "lock_api")]
@@ -56,87 +153,6 @@ mod futex_once;
 mod futex_rwlock;
 mod once;
 mod once_lock;
+mod raw_mutex;
+mod raw_rwlock;
 mod wait_wake;
-
-/// An implementation of [`lock_api::RawMutex`].
-///
-/// All of this `RawMutex`'s methods are in its implementation of
-/// [`lock_api::RawMutex`]. To import that trait without conflicting
-/// with this `RawMutex` type, use:
-///
-/// ```
-/// use rustix_futex_sync::lock_api::RawMutex as _;
-/// ```
-#[repr(transparent)]
-pub struct RawMutex(futex_mutex::Mutex);
-
-/// An implementation of [`lock_api::RawRwLock`].
-///
-/// All of this `RawRwLock`'s methods are in its implementation of
-/// [`lock_api::RawRwLock`]. To import that trait without conflicting
-/// with this `RawRwLock` type, use:
-///
-/// ```
-/// use rustix_futex_sync::lock_api::RawRwLock as _;
-/// ```
-#[repr(C)]
-pub struct RawRwLock(futex_rwlock::RwLock);
-
-// Implement the raw lock traits for our wrappers.
-
-unsafe impl lock_api::RawMutex for RawMutex {
-    type GuardMarker = lock_api::GuardNoSend;
-
-    const INIT: Self = Self(futex_mutex::Mutex::new());
-
-    #[inline]
-    fn lock(&self) {
-        self.0.lock()
-    }
-
-    #[inline]
-    fn try_lock(&self) -> bool {
-        self.0.try_lock()
-    }
-
-    #[inline]
-    unsafe fn unlock(&self) {
-        self.0.unlock()
-    }
-}
-
-unsafe impl lock_api::RawRwLock for RawRwLock {
-    type GuardMarker = lock_api::GuardNoSend;
-
-    const INIT: Self = Self(futex_rwlock::RwLock::new());
-
-    #[inline]
-    fn lock_shared(&self) {
-        self.0.read()
-    }
-
-    #[inline]
-    fn try_lock_shared(&self) -> bool {
-        self.0.try_read()
-    }
-
-    #[inline]
-    unsafe fn unlock_shared(&self) {
-        self.0.read_unlock()
-    }
-
-    #[inline]
-    fn lock_exclusive(&self) {
-        self.0.write()
-    }
-
-    #[inline]
-    fn try_lock_exclusive(&self) -> bool {
-        self.0.try_write()
-    }
-
-    #[inline]
-    unsafe fn unlock_exclusive(&self) {
-        self.0.write_unlock()
-    }
-}

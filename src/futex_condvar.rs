@@ -5,18 +5,18 @@
 use core::sync::atomic::{AtomicU32, Ordering::Relaxed};
 use super::wait_wake::{futex_wait, futex_wake, futex_wake_all};
 use core::time::Duration;
-use super::RawMutex;
+use super::generic::RawMutex;
 use super::lock_api::RawMutex as _;
 
 #[repr(transparent)]
-pub struct Condvar {
+pub struct Condvar<const SHM: bool> {
     // The value of this atomic is simply incremented on every notification.
     // This is used by `.wait()` to not miss any notifications after
     // unlocking the mutex and before waiting for notifications.
     futex: AtomicU32,
 }
 
-impl Condvar {
+impl<const SHM: bool> Condvar<SHM> {
     #[inline]
     pub const fn new() -> Self {
         Self { futex: AtomicU32::new(0) }
@@ -27,23 +27,23 @@ impl Condvar {
 
     pub fn notify_one(&self) {
         self.futex.fetch_add(1, Relaxed);
-        futex_wake(&self.futex);
+        futex_wake::<SHM>(&self.futex);
     }
 
     pub fn notify_all(&self) {
         self.futex.fetch_add(1, Relaxed);
-        futex_wake_all(&self.futex);
+        futex_wake_all::<SHM>(&self.futex);
     }
 
-    pub unsafe fn wait(&self, mutex: &RawMutex) {
+    pub unsafe fn wait(&self, mutex: &RawMutex<SHM>) {
         self.wait_optional_timeout(mutex, None);
     }
 
-    pub unsafe fn wait_timeout(&self, mutex: &RawMutex, timeout: Duration) -> bool {
+    pub unsafe fn wait_timeout(&self, mutex: &RawMutex<SHM>, timeout: Duration) -> bool {
         self.wait_optional_timeout(mutex, Some(timeout))
     }
 
-    unsafe fn wait_optional_timeout(&self, mutex: &RawMutex, timeout: Option<Duration>) -> bool {
+    unsafe fn wait_optional_timeout(&self, mutex: &RawMutex<SHM>, timeout: Option<Duration>) -> bool {
         // Examine the notification counter _before_ we unlock the mutex.
         let futex_value = self.futex.load(Relaxed);
 
@@ -52,7 +52,7 @@ impl Condvar {
 
         // Wait, but only if there hasn't been any
         // notification since we unlocked the mutex.
-        let r = futex_wait(&self.futex, futex_value, timeout);
+        let r = futex_wait::<SHM>(&self.futex, futex_value, timeout);
 
         // Lock the mutex again.
         mutex.lock();
