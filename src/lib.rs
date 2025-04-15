@@ -63,6 +63,8 @@ pub type ReentrantMutexGuard<'a, G, T> = generic::ReentrantMutexGuard<'a, G, T, 
 pub mod shm {
     use crate::generic;
 
+    pub use super::lock_api;
+
     pub type Once = generic::Once<true>;
     #[cfg(feature = "lock_api")]
     pub type Condvar = generic::Condvar<true>;
